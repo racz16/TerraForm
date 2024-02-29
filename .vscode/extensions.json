@@ -1,9 +1,0 @@
-{
-    "recommendations": [
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode",
-        "noah-labrecque.wgsl-lang",
-        "amodio.tsl-problem-matcher",
-        "raczzalan.webgl-glsl-editor"
-    ]
-}
