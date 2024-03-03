@@ -15,13 +15,14 @@ export interface Pipeline {
     getDescriptor(): PipelineDescriptor;
 }
 
-export function createPipeline(descriptor: PipelineDescriptor): Pipeline {
+export async function createPipeline(descriptor: PipelineDescriptor): Promise<Pipeline> {
     if (isWebGL1()) {
         return new GlPipeline(descriptor);
     } else if (isWebGL2()) {
         return new GlPipeline(descriptor);
     } else {
-        return new GpuPipeline(descriptor);
+        const pipeline = new GpuPipeline(descriptor);
+        return pipeline.initialize().then(() => pipeline);
     }
 }
 

@@ -129,10 +129,14 @@ export class Rendering {
         if (!this.capabilities.instancedRendering) {
             throw new Error('Instanced rendering is not supported');
         }
-        this.createPipeline();
+        const pipelinePromise = this.createPipeline();
         this.createQuery();
         this.createMeshes();
         this.createUniformBuffer();
+        this.pipeline = await pipelinePromise;
+        if (DEVELOPMENT) {
+            console.log('Pipeline created');
+        }
     }
 
     private getCanvasElement(): HTMLCanvasElement {
@@ -162,13 +166,13 @@ export class Rendering {
         });
     }
 
-    private createPipeline(): void {
+    private async createPipeline(): Promise<Pipeline> {
         const shader = createShader({ label: 'default shader' });
         const vertexPositionIndex = 0;
         const vertexNormalIndex = 1;
         const instanceModelMatrixIndex = 2;
         const instanceColorIndex = 6;
-        this.pipeline = createPipeline({
+        return createPipeline({
             label: 'default pipeline',
             shader: shader,
             vertexBuffers: [
@@ -221,9 +225,6 @@ export class Rendering {
                 },
             ],
         });
-        if (DEVELOPMENT) {
-            console.log('Pipeline created');
-        }
     }
 
     private createQuery(): void {

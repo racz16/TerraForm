@@ -3,17 +3,20 @@ import { Pipeline, PipelineDescriptor, VertexAttributeFormat } from '../pipeline
 import { getGpuContext } from '../rendering-context';
 
 export class GpuPipeline implements Pipeline {
-    private pipeline: GPURenderPipeline;
+    private pipeline!: GPURenderPipeline;
     private descriptor: PipelineDescriptor;
 
     public constructor(descriptor: PipelineDescriptor) {
         this.descriptor = descriptor;
-        this.pipeline = getGpuContext()
+    }
+
+    public async initialize(): Promise<void> {
+        this.pipeline = await getGpuContext()
             .getDevice()
-            .createRenderPipeline({
+            .createRenderPipelineAsync({
                 vertex: {
-                    module: descriptor.shader.getId(),
-                    buffers: descriptor.vertexBuffers.map<GPUVertexBufferLayout>((vbl) => ({
+                    module: this.descriptor.shader.getId(),
+                    buffers: this.descriptor.vertexBuffers.map<GPUVertexBufferLayout>((vbl) => ({
                         arrayStride: vbl.stride,
                         stepMode: vbl.isInstanced ? 'instance' : 'vertex',
                         attributes: vbl.attributes.map((a) => ({
@@ -24,7 +27,7 @@ export class GpuPipeline implements Pipeline {
                     })),
                 },
                 fragment: {
-                    module: descriptor.shader.getId(),
+                    module: this.descriptor.shader.getId(),
                     targets: [{ format: getGpuContext().getCanvasFormat() }],
                 },
                 depthStencil: {
