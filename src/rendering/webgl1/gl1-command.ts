@@ -57,6 +57,11 @@ export class Gl1DrawInstancedIndexedCommand implements Command {
 
     public constructor(descriptor: DrawInstancedIndexedCommandDescriptor) {
         this.descriptor = descriptor;
+        if (DEVELOPMENT) {
+            if (descriptor.instanceOffset) {
+                throw new Error('Instance offset is not supported in WebGL');
+            }
+        }
     }
 
     public execute(): void {

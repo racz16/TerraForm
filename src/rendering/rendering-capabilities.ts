@@ -4,4 +4,5 @@ export interface RenderingCapabilities {
     instancedRendering: boolean;
     isNdcCube: boolean;
     debugGroups: boolean;
+    instanceOffset: boolean;
 }

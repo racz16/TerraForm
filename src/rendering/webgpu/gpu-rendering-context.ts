@@ -21,6 +21,7 @@ export class GpuRenderingContext implements RenderingContext {
         rendering.getCapabilities().uniformBuffer = true;
         rendering.getCapabilities().instancedRendering = true;
         rendering.getCapabilities().debugGroups = true;
+        rendering.getCapabilities().instanceOffset = true;
         this.handleResize();
         if (DEVELOPMENT) {
             console.groupEnd();

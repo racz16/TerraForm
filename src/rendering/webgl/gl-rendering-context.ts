@@ -43,6 +43,7 @@ export abstract class GlRenderingContext implements RenderingContext {
             }
         }
         rendering.getCapabilities().isNdcCube = true;
+        rendering.getCapabilities().instanceOffset = false;
         this.capabilitiesAndExtensions();
         if (DEVELOPMENT) {
             console.groupEnd();

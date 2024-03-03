@@ -101,7 +101,7 @@ export class GpuDrawInstancedIndexedCommand implements Command {
     }
 
     public execute(): void {
-        this.renderPassEncoder.drawIndexed(this.descriptor.indexCount, this.descriptor.instanceCount);
+        this.renderPassEncoder.drawIndexed(this.descriptor.indexCount, this.descriptor.instanceCount, 0, 0, this.descriptor.instanceOffset);
         statistics.increment('draw-calls', 1);
         statistics.increment('api-calls', 1);
         statistics.increment('rendered-instances', this.descriptor.instanceCount);

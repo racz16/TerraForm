@@ -4,7 +4,7 @@ import { Entity } from '../scene/entity';
 import { Mesh } from '../scene/mesh';
 import { createBuffer, BufferUsage, Buffer } from './buffer';
 import { CommandBuffer } from './command-buffer';
-import { camera, options, statistics } from '..';
+import { camera, options, rendering, statistics } from '..';
 import { MAT4_ITEM_COUNT, SIZEOF_FLOAT, VEC3_ITEM_COUNT } from '../constants';
 import { addToVec3Pool } from '../utility';
 
@@ -117,19 +117,31 @@ export class Cell {
             return;
         }
         statistics.increment('rendered-cells', 1);
+        const vertexBufferIndex = 0;
+        const instanceBufferIndex = 1;
         let offset = 0;
+        const instanceOffsetSupported = rendering.getCapabilities().instanceOffset;
+        if (instanceOffsetSupported) {
+            commandBuffer.addSetVertexBufferCommand({
+                vertexBuffer: this.instanceBuffer,
+                index: instanceBufferIndex,
+            });
+        }
         for (const [mesh, entities] of this.scene) {
             if (!entities.length) {
                 continue;
             }
-            commandBuffer.addSetVertexBufferCommand({ vertexBuffer: vertexBuffers[mesh.vertexBufferIndex], index: 0 });
-            commandBuffer.addSetVertexBufferCommand({
-                vertexBuffer: this.instanceBuffer,
-                index: 1,
-                offset: offset * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
-            });
+            commandBuffer.addSetVertexBufferCommand({ vertexBuffer: vertexBuffers[mesh.vertexBufferIndex], index: vertexBufferIndex });
+            if (!instanceOffsetSupported) {
+                commandBuffer.addSetVertexBufferCommand({
+                    vertexBuffer: this.instanceBuffer,
+                    index: instanceBufferIndex,
+                    offset: offset * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
+                });
+            }
             commandBuffer.addSetIndexBufferCommand(indexBuffers[mesh.indexBufferIndex]);
-            commandBuffer.addDrawInstancedIndexedCommand({ indexCount: mesh.indexCount, instanceCount: entities.length });
+            const instanceOffset = instanceOffsetSupported ? offset : 0;
+            commandBuffer.addDrawInstancedIndexedCommand({ indexCount: mesh.indexCount, instanceCount: entities.length, instanceOffset });
             statistics.increment('rendered-vertices', mesh.vertexCount * entities.length);
             statistics.increment('rendered-triangles', (mesh.indexCount / 3) * entities.length);
             offset += entities.length;

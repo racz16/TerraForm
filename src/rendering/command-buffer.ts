@@ -28,6 +28,7 @@ export interface SetUniformCommandDescriptor<T> {
 export interface DrawInstancedIndexedCommandDescriptor {
     indexCount: number;
     instanceCount: number;
+    instanceOffset?: number;
 }
 
 export interface CommandBuffer {

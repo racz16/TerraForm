@@ -66,6 +66,7 @@ export class Rendering {
         instancedRendering: false,
         isNdcCube: true,
         debugGroups: false,
+        instanceOffset: false,
     };
 
     public getRenderingApi(): RenderingApi {
