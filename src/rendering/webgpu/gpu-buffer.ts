@@ -11,17 +11,32 @@ export class GpuBuffer implements Buffer {
 
     public constructor(descriptor: BufferDescriptor) {
         this.usage = descriptor.usage;
-        if (descriptor.type === 'size') {
-            this.size = descriptor.size;
+        this.size = this.computeSize(descriptor);
+        this.buffer = this.createBuffer(descriptor);
+        this.initializeBufferData(descriptor);
+        statistics.increment('api-calls', 1);
+        statistics.increment('buffer-data', this.size);
+    }
+
+    private computeSize(descriptor: BufferDescriptor): number {
+        if (descriptor.type === 'size' || descriptor.type === 'data-callback') {
+            return descriptor.size;
         } else {
-            this.size = descriptor.dataLength ?? descriptor.data.byteLength;
+            return descriptor.dataLength ?? descriptor.data.byteLength;
         }
+    }
+
+    private createBuffer(descriptor: BufferDescriptor): GPUBuffer {
         const nativeDescriptor: GPUBufferDescriptor = {
             size: this.size,
             usage: this.getGpuUsage(),
             label: descriptor.label,
+            mappedAtCreation: descriptor.type === 'data-callback',
         };
-        this.buffer = getGpuContext().getDevice().createBuffer(nativeDescriptor);
+        return getGpuContext().getDevice().createBuffer(nativeDescriptor);
+    }
+
+    private initializeBufferData(descriptor: BufferDescriptor): void {
         if (descriptor.type === 'data') {
             this.setData({
                 type: 'buffer',
@@ -29,9 +44,12 @@ export class GpuBuffer implements Buffer {
                 dataOffset: descriptor.dataOffset,
                 dataLength: descriptor.dataLength,
             });
+        } else if (descriptor.type === 'data-callback') {
+            const data = this.buffer.getMappedRange();
+            descriptor.callback(data);
+            this.buffer.unmap();
+            statistics.increment('api-calls', 2);
         }
-        statistics.increment('api-calls', 1);
-        statistics.increment('buffer-data', this.size);
     }
 
     public getBindGroup(pipeline: GPURenderPipeline, i: number): GPUBindGroup {

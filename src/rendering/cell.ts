@@ -84,22 +84,19 @@ export class Cell {
     }
 
     private createInstanceBuffer(): Buffer {
-        const instanceData = this.createInstanceData();
         return createBuffer({
-            type: 'data',
-            data: instanceData,
+            type: 'data-callback',
+            size: this.entityCount * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
+            callback: (data) => {
+                const instanceData = new Float32Array(data);
+                let offset = 0;
+                for (const entities of this.scene.values()) {
+                    this.addInstanceData(instanceData, entities, offset);
+                    offset += entities.length;
+                }
+            },
             usage: BufferUsage.VERTEX,
         });
-    }
-
-    private createInstanceData(): Float32Array {
-        const instanceData = new Float32Array(this.entityCount * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT));
-        let offset = 0;
-        for (const entities of this.scene.values()) {
-            this.addInstanceData(instanceData, entities, offset);
-            offset += entities.length;
-        }
-        return instanceData;
     }
 
     private addInstanceData(instanceData: Float32Array, entities: Entity[], offset: number): void {

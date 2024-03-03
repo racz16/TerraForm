@@ -6,18 +6,20 @@ import { statistics } from '../..';
 export class Gl1Buffer extends GlBuffer {
     protected context!: WebGLRenderingContext;
 
-    protected override allocate(descriptor: BufferDescriptor): void {
+    protected override initializeBufferData(descriptor: BufferDescriptor): void {
         const glUsage = descriptor.dynamic ? this.context.DYNAMIC_DRAW : this.context.STATIC_DRAW;
         if (descriptor.type === 'size') {
-            this.size = descriptor.size;
             this.context.bufferData(this.target, descriptor.size, glUsage);
+        } else if (descriptor.type === 'data-callback') {
+            const data = new ArrayBuffer(this.size);
+            descriptor.callback(data);
+            this.context.bufferData(this.target, data, glUsage);
         } else {
             if (DEVELOPMENT) {
                 if (descriptor.dataOffset || descriptor.dataLength) {
                     throw new Error('Data offset and data length are not supported in WebGL 1');
                 }
             }
-            this.size = descriptor.dataLength ?? descriptor.data.byteLength;
             this.context.bufferData(this.target, descriptor.data, glUsage);
         }
         statistics.increment('api-calls', 1);

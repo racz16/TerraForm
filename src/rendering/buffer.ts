@@ -29,7 +29,16 @@ interface BufferFromDataDescriptor {
     dynamic?: boolean;
 }
 
-export type BufferDescriptor = BufferFromSizeDescriptor | BufferFromDataDescriptor;
+interface BufferDataCallbackDescriptor {
+    type: 'data-callback';
+    callback: (data: ArrayBuffer) => void;
+    size: number;
+    usage: BufferUsage;
+    label?: string;
+    dynamic?: boolean;
+}
+
+export type BufferDescriptor = BufferFromSizeDescriptor | BufferFromDataDescriptor | BufferDataCallbackDescriptor;
 
 interface BufferDataFromBufferSourceDescriptor {
     type: 'buffer';

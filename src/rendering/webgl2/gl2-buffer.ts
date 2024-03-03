@@ -6,13 +6,15 @@ import { statistics } from '../..';
 export class Gl2Buffer extends GlBuffer {
     protected context!: WebGL2RenderingContext;
 
-    protected override allocate(descriptor: BufferDescriptor): void {
+    protected override initializeBufferData(descriptor: BufferDescriptor): void {
         const glUsage = descriptor.dynamic ? this.context.DYNAMIC_DRAW : this.context.STATIC_DRAW;
         if (descriptor.type === 'size') {
-            this.size = descriptor.size;
             this.context.bufferData(this.target, descriptor.size, glUsage);
+        } else if (descriptor.type === 'data-callback') {
+            const data = new ArrayBuffer(this.size);
+            descriptor.callback(data);
+            this.context.bufferData(this.target, data, glUsage);
         } else {
-            this.size = descriptor.dataLength ?? descriptor.data.byteLength;
             this.context.bufferData(this.target, descriptor.data, glUsage, descriptor.dataOffset ?? 0, descriptor.dataLength);
         }
         statistics.increment('api-calls', 1);

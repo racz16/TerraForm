@@ -12,20 +12,29 @@ export abstract class GlBuffer implements Buffer {
 
     public constructor(descriptor: BufferDescriptor) {
         this.context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
+        this.size = this.computeSize(descriptor);
         this.usage = descriptor.usage;
         this.target = this.getTarget();
         this.id = this.context.createBuffer()!;
         statistics.increment('api-calls', 1);
         this.bind();
-        this.allocate(descriptor);
+        this.initializeBufferData(descriptor);
         statistics.increment('buffer-data', this.size);
+    }
+
+    private computeSize(descriptor: BufferDescriptor): number {
+        if (descriptor.type === 'size' || descriptor.type === 'data-callback') {
+            return descriptor.size;
+        } else {
+            return descriptor.dataLength ?? descriptor.data.byteLength;
+        }
     }
 
     public getId(): WebGLBuffer {
         return this.id;
     }
 
-    protected abstract allocate(descriptor: BufferDescriptor): void;
+    protected abstract initializeBufferData(descriptor: BufferDescriptor): void;
 
     protected abstract getTarget(): GLenum;
 
