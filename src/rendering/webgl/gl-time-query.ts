@@ -17,13 +17,17 @@ export abstract class GlTimeQuery implements TimeQuery {
 
     public update(): void {
         if (this.inProgress && this.isResultAvailable()) {
-            const elapsed = this.getResult();
-            this.handler(nanoSecondsToMilliseconds(elapsed));
+            if (this.isResultValid()) {
+                const elapsed = this.getResult();
+                this.handler(nanoSecondsToMilliseconds(elapsed));
+            }
             this.inProgress = false;
         }
     }
 
     protected abstract isResultAvailable(): boolean;
+
+    protected abstract isResultValid(): boolean;
 
     protected abstract getResult(): number;
 

@@ -28,7 +28,8 @@ export class Gl2TimeQuery extends GlTimeQuery {
     public override end(): void {
         if (!this.inProgress) {
             this.context.endQuery(getGl2Context().getGpuTimeExtension()!.TIME_ELAPSED_EXT);
-            statistics.increment('api-calls', 1);
+            this.context.flush();
+            statistics.increment('api-calls', 2);
             this.inProgress = true;
         }
     }
@@ -36,6 +37,11 @@ export class Gl2TimeQuery extends GlTimeQuery {
     protected override isResultAvailable(): boolean {
         statistics.increment('api-calls', 1);
         return this.context.getQueryParameter(this.query, this.context.QUERY_RESULT_AVAILABLE);
+    }
+
+    protected isResultValid(): boolean {
+        statistics.increment('api-calls', 1);
+        return !this.context.getParameter(getGl2Context().getGpuTimeExtension()!.GPU_DISJOINT_EXT);
     }
 
     protected override getResult(): number {
