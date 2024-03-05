@@ -39,6 +39,7 @@ export class GpuPipeline implements Pipeline {
                     cullMode: 'back',
                 },
                 layout: 'auto',
+                label: this.descriptor.label,
             });
         statistics.increment('api-calls', 1);
     }
