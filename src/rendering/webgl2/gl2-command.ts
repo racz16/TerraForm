@@ -1,15 +1,12 @@
 import { statistics } from '../..';
 import { Command } from '../command';
-import {
-    DrawInstancedIndexedCommandDescriptor,
-    SetUniformBufferCommandDescriptor,
-    SetVertexBufferCommandDescriptor,
-} from '../command-buffer';
+import { DrawInstancedIndexedCommandDescriptor, SetIndexedUniformCommandDescriptor, SetVertexBufferCommandDescriptor } from '../renderpass';
 import { Pipeline, VertexAttributeFormat } from '../pipeline';
 import { getGl2Context } from '../rendering-context';
 import { Shader } from '../shader';
 import { Gl2Buffer } from './gl2-buffer';
 import { Gl2Shader } from './gl2-shader';
+import { Buffer } from '../buffer';
 
 export class Gl2SetVertexBufferCommand implements Command {
     private pipeline: Pipeline;
@@ -37,10 +34,11 @@ export class Gl2SetVertexBufferCommand implements Command {
             );
             if (vbl.isInstanced) {
                 context.vertexAttribDivisor(va.index, 1);
-                statistics.increment('api-calls', 1);
+            } else {
+                context.vertexAttribDivisor(va.index, 0);
             }
             context.enableVertexAttribArray(va.index);
-            statistics.increment('api-calls', 2);
+            statistics.increment('api-calls', 3);
         }
     }
 
@@ -59,17 +57,17 @@ export class Gl2SetVertexBufferCommand implements Command {
 }
 
 export class Gl2SetUniformBufferCommand implements Command {
-    private descriptor: SetUniformBufferCommandDescriptor;
+    private descriptor: SetIndexedUniformCommandDescriptor<Buffer>;
     private shader: Shader;
 
-    public constructor(descriptor: SetUniformBufferCommandDescriptor, shader: Shader) {
+    public constructor(descriptor: SetIndexedUniformCommandDescriptor<Buffer>, shader: Shader) {
         this.descriptor = descriptor;
         this.shader = shader;
     }
 
     public execute(): void {
         const context = getGl2Context().getId();
-        const uniformBuffer = this.descriptor.uniformBuffer as Gl2Buffer;
+        const uniformBuffer = this.descriptor.value as Gl2Buffer;
         const shader = this.shader as Gl2Shader;
         const index = shader.getUniformBlockIndex(this.descriptor.name);
         context.uniformBlockBinding(shader.getId(), index, this.descriptor.index);

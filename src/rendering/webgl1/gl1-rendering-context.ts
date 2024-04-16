@@ -1,11 +1,17 @@
 import { rendering, statistics } from '../..';
-import { EXTDisjointTimerQuery, GL1_GPU_TIME_EXTENSION, GL1_INSTANCED_RENDERING_EXTENSION } from '../webgl/gl-extensions';
+import {
+    EXTDisjointTimerQuery,
+    GL1_DEPTH_TEXTURE,
+    GL1_GPU_TIME_EXTENSION,
+    GL1_INSTANCED_RENDERING_EXTENSION,
+} from '../webgl/gl-extensions';
 import { GlRenderingContext } from '../webgl/gl-rendering-context';
 
 export class Gl1RenderingContext extends GlRenderingContext {
     protected context!: WebGLRenderingContext;
     private gl1GpuTimeExtension: EXTDisjointTimerQuery | null = null;
     private gl1InstancedRenderingExtension: ANGLE_instanced_arrays | null = null;
+    private gl1DepthTexture: WEBGL_depth_texture | null = null;
 
     public initialize(): void {
         this.initializeShared('WebGL 1');
@@ -18,7 +24,8 @@ export class Gl1RenderingContext extends GlRenderingContext {
     protected override capabilitiesAndExtensions(): void {
         this.gl1GpuTimeExtension = this.context.getExtension(GL1_GPU_TIME_EXTENSION);
         this.gl1InstancedRenderingExtension = this.context.getExtension(GL1_INSTANCED_RENDERING_EXTENSION)!;
-        statistics.increment('api-calls', 2);
+        this.gl1DepthTexture = this.context.getExtension(GL1_DEPTH_TEXTURE);
+        statistics.increment('api-calls', 3);
         let precision: GLint = 0;
         if (this.gl1GpuTimeExtension) {
             precision = this.gl1GpuTimeExtension.getQueryEXT(
@@ -31,6 +38,8 @@ export class Gl1RenderingContext extends GlRenderingContext {
         rendering.getCapabilities().gpuTimer = !!(this.gl1GpuTimeExtension && precision);
         rendering.getCapabilities().instancedRendering = !!this.gl1InstancedRenderingExtension;
         rendering.getCapabilities().debugGroups = false;
+        rendering.getCapabilities().depthTexture = !!this.gl1DepthTexture;
+        rendering.getCapabilities().uvUp = true;
     }
 
     protected override createContext(): WebGLRenderingContextBase {
@@ -50,5 +59,9 @@ export class Gl1RenderingContext extends GlRenderingContext {
 
     public getInstancedRenderingExtension(): ANGLE_instanced_arrays | null {
         return this.gl1InstancedRenderingExtension;
+    }
+
+    public getDepthTextureExtension(): WEBGL_depth_texture | null {
+        return this.gl1DepthTexture;
     }
 }

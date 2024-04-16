@@ -33,6 +33,8 @@ export class Gl2RenderingContext extends GlRenderingContext {
         rendering.getCapabilities().gpuTimer = !!(this.gl2GpuTimeExtension && precision);
         rendering.getCapabilities().instancedRendering = true;
         rendering.getCapabilities().debugGroups = false;
+        rendering.getCapabilities().depthTexture = true;
+        rendering.getCapabilities().uvUp = true;
     }
 
     protected override createContext(): WebGLRenderingContextBase {

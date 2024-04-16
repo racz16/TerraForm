@@ -1,20 +1,18 @@
-import vertexCode from '../../shader/shader.vert';
-import fragmentCode from '../../shader/shader.frag';
-
-import { Shader } from '../shader';
+import { Shader, ShaderDescriptor } from '../shader';
 import { isWebGL2 } from '../rendering';
 import { statistics } from '../..';
 import { getGl1Context, getGl2Context } from '../rendering-context';
+import { ShaderLibrary } from '../shader-library';
 
 export abstract class GlShader implements Shader {
     protected program: WebGLProgram;
     private uniformLocations = new Map<string, WebGLUniformLocation>();
     private context: WebGLRenderingContext | WebGL2RenderingContext;
 
-    public constructor() {
+    public constructor(descriptor: ShaderDescriptor) {
         this.context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
-        const vertexShader = this.getShader(this.context.VERTEX_SHADER, vertexCode);
-        const fragmentShader = this.getShader(this.context.FRAGMENT_SHADER, fragmentCode);
+        const vertexShader = this.getShader(this.context.VERTEX_SHADER, ShaderLibrary.get(`gl-vertex-${descriptor.name}`));
+        const fragmentShader = this.getShader(this.context.FRAGMENT_SHADER, ShaderLibrary.get(`gl-fragment-${descriptor.name}`));
         this.program = this.context.createProgram()!;
         this.setAttributeLocations();
         this.context.attachShader(this.program, vertexShader);

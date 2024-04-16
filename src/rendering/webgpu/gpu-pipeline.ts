@@ -28,13 +28,17 @@ export class GpuPipeline implements Pipeline {
                 },
                 fragment: {
                     module: this.descriptor.shader.getId(),
-                    targets: [{ format: getGpuContext().getCanvasFormat() }],
+                    targets: this.descriptor.attachmentFormats.map((af) => ({
+                        format: af === 'canvas' ? getGpuContext().getCanvasFormat() : 'rgba8unorm',
+                    })),
                 },
-                depthStencil: {
-                    format: 'depth32float',
-                    depthWriteEnabled: true,
-                    depthCompare: 'less',
-                },
+                depthStencil: this.descriptor.depthAttachment
+                    ? {
+                          format: 'depth32float',
+                          depthWriteEnabled: true,
+                          depthCompare: 'less',
+                      }
+                    : undefined,
                 primitive: {
                     cullMode: 'back',
                 },

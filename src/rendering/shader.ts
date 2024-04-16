@@ -9,14 +9,15 @@ export interface Shader {
 }
 
 export interface ShaderDescriptor {
+    name: string;
     label?: string;
 }
 
 export function createShader(descriptor: ShaderDescriptor): Shader {
     if (isWebGL1()) {
-        return new Gl1Shader();
+        return new Gl1Shader(descriptor);
     } else if (isWebGL2()) {
-        return new Gl2Shader();
+        return new Gl2Shader(descriptor);
     } else {
         return new GpuShader(descriptor);
     }

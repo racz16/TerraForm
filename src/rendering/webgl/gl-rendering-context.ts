@@ -57,7 +57,7 @@ export abstract class GlRenderingContext implements RenderingContext {
     protected getContext(id: 'webgl' | 'webgl-experimental' | 'webgl2'): WebGLRenderingContextBase | null {
         const context = rendering.getCanvas().getContext(id, {
             powerPreference: 'high-performance',
-            depth: true,
+            depth: false,
             antialias: false,
         }) as WebGLRenderingContext | null;
         statistics.increment('api-calls', 1);
@@ -71,8 +71,6 @@ export abstract class GlRenderingContext implements RenderingContext {
     public getId(): WebGLRenderingContextBase {
         return this.context;
     }
-
-    public handleResize(): void {}
 
     public async stop(): Promise<void> {
         this.context.flush();

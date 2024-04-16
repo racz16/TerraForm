@@ -59,6 +59,7 @@ function createCellEntities(x: number, z: number): Entity[] {
     for (let i = 0; i < BOX_COUNT; i++) {
         const entity: Entity = {
             position: createVec3(x + Math.random() * CELL_SIZE - CELL_SIZE / 2, 0.5, z + Math.random() * -CELL_SIZE + CELL_SIZE / 2),
+            rotation: createVec3(0, 0, 0),
             scale: createVec3(1, 1, 1),
             mesh: 'cube',
             color,
@@ -68,7 +69,8 @@ function createCellEntities(x: number, z: number): Entity[] {
     color = createVec3(Math.random(), Math.random(), Math.random());
     scene.push({
         position: createVec3(x, 0, z),
-        scale: createVec3(CELL_SIZE, 1, CELL_SIZE),
+        rotation: createVec3(-90, 0, 0),
+        scale: createVec3(CELL_SIZE / 2, CELL_SIZE / 2, 1),
         mesh: 'quad',
         color,
     });

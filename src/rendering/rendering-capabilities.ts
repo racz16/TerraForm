@@ -5,4 +5,6 @@ export interface RenderingCapabilities {
     isNdcCube: boolean;
     debugGroups: boolean;
     instanceOffset: boolean;
+    depthTexture: boolean;
+    uvUp: boolean;
 }

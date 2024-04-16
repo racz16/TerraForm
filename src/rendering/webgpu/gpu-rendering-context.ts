@@ -6,8 +6,6 @@ export class GpuRenderingContext implements RenderingContext {
     private canvasFormat!: GPUTextureFormat;
     private context!: GPUCanvasContext;
     private device!: GPUDevice;
-    private depth!: GPUTexture;
-    private depthView!: GPUTextureView;
 
     public async initialize(): Promise<void> {
         if (DEVELOPMENT) {
@@ -22,7 +20,8 @@ export class GpuRenderingContext implements RenderingContext {
         rendering.getCapabilities().instancedRendering = true;
         rendering.getCapabilities().debugGroups = true;
         rendering.getCapabilities().instanceOffset = true;
-        this.handleResize();
+        rendering.getCapabilities().depthTexture = true;
+        rendering.getCapabilities().uvUp = false;
         if (DEVELOPMENT) {
             console.groupEnd();
         }
@@ -40,27 +39,9 @@ export class GpuRenderingContext implements RenderingContext {
         return this.device;
     }
 
-    public getDepthView(): GPUTextureView {
-        return this.depthView;
-    }
-
     public getCurrentTexture(): GPUTexture {
         statistics.increment('api-calls', 1);
         return this.context.getCurrentTexture();
-    }
-
-    public handleResize(): void {
-        if (this.depth) {
-            this.depth.destroy();
-            statistics.increment('api-calls', 1);
-        }
-        this.depth = this.device.createTexture({
-            format: 'depth32float',
-            size: [window.innerWidth, window.innerHeight, 1],
-            usage: GPUTextureUsage.RENDER_ATTACHMENT,
-        });
-        this.depthView = this.depth.createView();
-        statistics.increment('api-calls', 2);
     }
 
     private checkWebGPUSupport(): void {
@@ -200,7 +181,6 @@ export class GpuRenderingContext implements RenderingContext {
     }
 
     public release(): void {
-        this.depth.destroy();
         this.context?.unconfigure();
         this.device?.destroy();
         statistics.increment('api-calls', 3);

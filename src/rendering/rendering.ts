@@ -12,8 +12,10 @@ import { RenderingApiOption } from '../options';
 import { Entity } from '../scene/entity';
 import { camera, cellsDebugUi, options, rendering, statistics, time } from '..';
 import { RenderingContext, createRenderingContext } from './rendering-context';
-import { MAT4_ITEM_COUNT, SIZEOF_FLOAT, VEC3_ITEM_COUNT, VEC4_ITEM_COUNT } from '../constants';
+import { MAT4_ITEM_COUNT, SIZEOF_FLOAT, VEC2_ITEM_COUNT, VEC3_ITEM_COUNT, VEC4_ITEM_COUNT } from '../constants';
 import { Camera } from '../camera';
+import { Texture, createTexture } from './texture';
+import { Renderpass } from './renderpass';
 
 export enum RenderingApi {
     WEBGL_1 = 1,
@@ -49,7 +51,8 @@ export class Rendering {
     private restarted = false;
     private canvas!: HTMLCanvasElement;
     private createCell!: (x: number, z: number) => Entity[];
-    private pipeline!: Pipeline;
+    private lambertianPipeline!: Pipeline;
+    private quadPipeline!: Pipeline;
     private query: TimeQuery | undefined;
     private vertexBuffers: Buffer[] = [];
     private indexBuffers: Buffer[] = [];
@@ -60,6 +63,8 @@ export class Rendering {
     private cells: Cell[] = [];
     private context!: RenderingContext;
     private cellsPool: Cell[] = [];
+    private color!: Texture;
+    private depth!: Texture;
     private capabilities: RenderingCapabilities = {
         gpuTimer: false,
         uniformBuffer: false,
@@ -67,6 +72,8 @@ export class Rendering {
         isNdcCube: true,
         debugGroups: false,
         instanceOffset: false,
+        depthTexture: false,
+        uvUp: true,
     };
 
     public getRenderingApi(): RenderingApi {
@@ -129,11 +136,17 @@ export class Rendering {
         if (!this.capabilities.instancedRendering) {
             throw new Error('Instanced rendering is not supported');
         }
-        const pipelinePromise = this.createPipeline();
+        if (!this.capabilities.depthTexture) {
+            throw new Error('Depth textures are not supported');
+        }
+        const lambertianPipelinePromise = this.createLambertianPipeline();
+        const quadPipelinePromise = this.createQuadPipeline();
         this.createQuery();
         this.createMeshes();
         this.createUniformBuffer();
-        this.pipeline = await pipelinePromise;
+        this.recreateRenderpassAttachments();
+        this.lambertianPipeline = await lambertianPipelinePromise;
+        this.quadPipeline = await quadPipelinePromise;
         if (DEVELOPMENT) {
             console.log('Pipeline created');
         }
@@ -166,18 +179,18 @@ export class Rendering {
         });
     }
 
-    private async createPipeline(): Promise<Pipeline> {
-        const shader = createShader({ label: 'default shader' });
+    private async createLambertianPipeline(): Promise<Pipeline> {
+        const shader = createShader({ name: 'lambertian', label: 'lambertian shader' });
         const vertexPositionIndex = 0;
         const vertexNormalIndex = 1;
-        const instanceModelMatrixIndex = 2;
-        const instanceColorIndex = 6;
+        const instanceModelMatrixIndex = 3;
+        const instanceColorIndex = 7;
         return createPipeline({
-            label: 'default pipeline',
+            label: 'lambertian pipeline',
             shader: shader,
             vertexBuffers: [
                 {
-                    stride: 2 * VEC3_ITEM_COUNT * SIZEOF_FLOAT,
+                    stride: (2 * VEC3_ITEM_COUNT + VEC2_ITEM_COUNT) * SIZEOF_FLOAT,
                     isInstanced: false,
                     attributes: [
                         {
@@ -224,6 +237,37 @@ export class Rendering {
                     ],
                 },
             ],
+            attachmentFormats: ['rgba8'],
+            depthAttachment: true,
+        });
+    }
+
+    private async createQuadPipeline(): Promise<Pipeline> {
+        const shader = createShader({ name: 'quad', label: 'quad shader' });
+        const vertexPositionIndex = 0;
+        const vertexTextureCoordinateIndex = 2;
+        return createPipeline({
+            label: 'quad pipeline',
+            shader: shader,
+            vertexBuffers: [
+                {
+                    stride: (2 * VEC3_ITEM_COUNT + VEC2_ITEM_COUNT) * SIZEOF_FLOAT,
+                    isInstanced: false,
+                    attributes: [
+                        {
+                            index: vertexPositionIndex,
+                            offset: 0,
+                            format: VertexAttributeFormat.FLOAT_3,
+                        },
+                        {
+                            index: vertexTextureCoordinateIndex,
+                            offset: 2 * VEC3_ITEM_COUNT * SIZEOF_FLOAT,
+                            format: VertexAttributeFormat.FLOAT_2,
+                        },
+                    ],
+                },
+            ],
+            attachmentFormats: ['canvas'],
         });
     }
 
@@ -273,18 +317,55 @@ export class Rendering {
             await this.handleRestart();
         }
         this.handleResize();
-        const commandBuffer = createCommandBuffer({ label: 'default command buffer', query: this.query });
-        if (DEVELOPMENT && this.capabilities.debugGroups) {
-            commandBuffer.addPushDebugGroup('frame');
-        }
-        commandBuffer.addSetPipelineCommand(this.pipeline);
-        this.updateCells(commandBuffer);
-        this.updateUniforms(commandBuffer);
-        this.renderCells(commandBuffer);
-        if (DEVELOPMENT && this.capabilities.debugGroups) {
-            commandBuffer.addPopDebugGroup();
-        }
+        const commandBuffer = createCommandBuffer('default command buffer');
+        this.renderScene(commandBuffer);
+        this.renderToCanvas(commandBuffer);
         commandBuffer.execute();
+    }
+
+    private renderScene(commandBuffer: CommandBuffer): void {
+        const lambertianRenderpass = commandBuffer.createRenderpass({
+            type: 'offscreen',
+            colorAttachments: [
+                {
+                    texture: this.color,
+                    clearColor: [0.7, 0.8, 1, 1],
+                },
+            ],
+            depthStencilAttachment: {
+                texture: this.depth,
+                clearValue: 1,
+            },
+            label: 'lambertian renderpass',
+            query: this.query,
+        });
+        if (DEVELOPMENT && this.capabilities.debugGroups) {
+            lambertianRenderpass.pushDebugGroupCommand('frame');
+        }
+        lambertianRenderpass.setPipelineCommand(this.lambertianPipeline);
+        this.updateCells(lambertianRenderpass);
+        this.updateUniforms(lambertianRenderpass);
+        this.renderCells(lambertianRenderpass);
+        if (DEVELOPMENT && this.capabilities.debugGroups) {
+            lambertianRenderpass.popDebugGroupCommand();
+        }
+    }
+
+    private renderToCanvas(commandBuffer: CommandBuffer): void {
+        const quadRenderpass = commandBuffer.createRenderpass({
+            type: 'canvas',
+            label: 'canvas renderpass',
+        });
+
+        const quadMesh = this.meshes.find((m) => m.name === 'quad');
+        if (!quadMesh) {
+            throw new Error("Couldn't find quad mesh");
+        }
+        quadRenderpass.setPipelineCommand(this.quadPipeline);
+        quadRenderpass.setVertexBufferCommand({ vertexBuffer: this.vertexBuffers[quadMesh.vertexBufferIndex], index: 0 });
+        quadRenderpass.setIndexBufferCommand(this.indexBuffers[quadMesh.indexBufferIndex]);
+        quadRenderpass.setUniformTextureCommand({ name: 'image', value: this.color, index: 0 });
+        quadRenderpass.drawIndexedCommand(quadMesh.indexCount);
     }
 
     private async handleRestart(): Promise<void> {
@@ -302,18 +383,44 @@ export class Rendering {
             this.canvas.height = window.innerHeight;
             cellsDebugUi.update();
             camera.invalidate();
-            this.context.handleResize();
+            this.recreateRenderpassAttachments();
         }
     }
 
-    private updateCells(commandBuffer: CommandBuffer): void {
+    private recreateRenderpassAttachments(): void {
+        if (this.color) {
+            this.color.release();
+        }
+        if (this.depth) {
+            this.depth.release();
+        }
+        this.color = createTexture({
+            type: '2d',
+            format: 'rgba8',
+            width: window.innerWidth,
+            height: window.innerHeight,
+            rendered: true,
+            sampled: true,
+            label: 'color buffer',
+        });
+        this.depth = createTexture({
+            type: '2d',
+            format: 'depth',
+            width: window.innerWidth,
+            height: window.innerHeight,
+            rendered: true,
+            label: 'depth buffer',
+        });
+    }
+
+    private updateCells(renderpass: Renderpass): void {
         if (DEVELOPMENT && this.capabilities.debugGroups) {
-            commandBuffer.addPushDebugGroup('update cells');
+            renderpass.pushDebugGroupCommand('update cells');
         }
         this.removeCells();
         this.addCells();
         if (DEVELOPMENT && this.capabilities.debugGroups) {
-            commandBuffer.addPopDebugGroup();
+            renderpass.popDebugGroupCommand();
         }
     }
 
@@ -380,16 +487,16 @@ export class Rendering {
         }
     }
 
-    private renderCells(commandBuffer: CommandBuffer): void {
+    private renderCells(renderpass: Renderpass): void {
         if (DEVELOPMENT && this.capabilities.debugGroups) {
-            commandBuffer.addPushDebugGroup('render cells');
+            renderpass.pushDebugGroupCommand('render cells');
         }
         statistics.set('cells', this.cells.length);
         for (const cell of this.cells) {
-            cell.render(commandBuffer, this.vertexBuffers, this.indexBuffers);
+            cell.render(renderpass, this.vertexBuffers, this.indexBuffers);
         }
         if (DEVELOPMENT && this.capabilities.debugGroups) {
-            commandBuffer.addPopDebugGroup();
+            renderpass.popDebugGroupCommand();
         }
     }
 
@@ -402,26 +509,26 @@ export class Rendering {
         statistics.set('rendered-triangles', 0);
     }
 
-    private updateUniforms(commandBuffer: CommandBuffer): void {
+    private updateUniforms(renderpass: Renderpass): void {
         if (DEVELOPMENT && this.capabilities.debugGroups) {
-            commandBuffer.addPushDebugGroup('update uniforms');
+            renderpass.pushDebugGroupCommand('update uniforms');
         }
         vec3.normalize(this.lightDirection, vec3.set(this.lightDirection, -1, -2, -3));
         if (this.capabilities.uniformBuffer) {
             this.uniformBufferData.set(camera.getVP(), 0);
             this.uniformBufferData.set(this.lightDirection, MAT4_ITEM_COUNT);
             this.uniformBuffer.setData({ type: 'buffer', data: this.uniformBufferData });
-            commandBuffer.addSetUniformBufferCommand({
+            renderpass.setUniformBufferCommand({
                 index: 0,
                 name: 'FrameData',
-                uniformBuffer: this.uniformBuffer,
+                value: this.uniformBuffer,
             });
         } else {
-            commandBuffer.addSetUniformMat4Command({ name: 'VP', value: camera.getVP() });
-            commandBuffer.addSetUniformVec3Command({ name: 'light', value: this.lightDirection });
+            renderpass.setUniformMat4Command({ name: 'VP', value: camera.getVP() });
+            renderpass.setUniformVec3Command({ name: 'light', value: this.lightDirection });
         }
         if (DEVELOPMENT && this.capabilities.debugGroups) {
-            commandBuffer.addPopDebugGroup();
+            renderpass.popDebugGroupCommand();
         }
     }
 
@@ -460,7 +567,10 @@ export class Rendering {
         }
         this.indexBuffers.length = 0;
         this.uniformBuffer?.release();
-        this.pipeline.getDescriptor().shader.release();
+        this.depth.release();
+        this.color.release();
+        this.quadPipeline.getDescriptor().shader.release();
+        this.lambertianPipeline.getDescriptor().shader.release();
         this.context.release();
         if (DEVELOPMENT) {
             console.log('Rendering released');

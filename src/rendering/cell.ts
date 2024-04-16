@@ -3,14 +3,14 @@ import { mat4, quat, vec3, vec4 } from 'gl-matrix';
 import { Entity } from '../scene/entity';
 import { Mesh } from '../scene/mesh';
 import { createBuffer, BufferUsage, Buffer } from './buffer';
-import { CommandBuffer } from './command-buffer';
 import { camera, options, rendering, statistics } from '..';
 import { MAT4_ITEM_COUNT, SIZEOF_FLOAT, VEC3_ITEM_COUNT } from '../constants';
 import { addToVec3Pool } from '../utility';
+import { Renderpass } from './renderpass';
 
 export class Cell {
     private static M = mat4.create();
-    private static defaultRotation = quat.fromEuler(quat.create(), 0, 0, 0);
+    private static q = quat.create();
     private static maxCellDistance = 0;
 
     private x = 0;
@@ -103,13 +103,18 @@ export class Cell {
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
             const instanceDataStartPosition = (i + offset) * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT);
-            mat4.fromRotationTranslationScale(Cell.M, Cell.defaultRotation, entity.position, entity.scale);
+            mat4.fromRotationTranslationScale(
+                Cell.M,
+                quat.fromEuler(Cell.q, entity.rotation[0], entity.rotation[1], entity.rotation[2]),
+                entity.position,
+                entity.scale
+            );
             instanceData.set(Cell.M, instanceDataStartPosition);
             instanceData.set(entity.color, instanceDataStartPosition + MAT4_ITEM_COUNT);
         }
     }
 
-    public render(commandBuffer: CommandBuffer, vertexBuffers: Buffer[], indexBuffers: Buffer[]): void {
+    public render(renderpass: Renderpass, vertexBuffers: Buffer[], indexBuffers: Buffer[]): void {
         if (options.isFrustumCulling() && !this.isInFrustum()) {
             return;
         }
@@ -119,7 +124,7 @@ export class Cell {
         let offset = 0;
         const instanceOffsetSupported = rendering.getCapabilities().instanceOffset;
         if (instanceOffsetSupported) {
-            commandBuffer.addSetVertexBufferCommand({
+            renderpass.setVertexBufferCommand({
                 vertexBuffer: this.instanceBuffer,
                 index: instanceBufferIndex,
             });
@@ -128,17 +133,17 @@ export class Cell {
             if (!entities.length) {
                 continue;
             }
-            commandBuffer.addSetVertexBufferCommand({ vertexBuffer: vertexBuffers[mesh.vertexBufferIndex], index: vertexBufferIndex });
+            renderpass.setVertexBufferCommand({ vertexBuffer: vertexBuffers[mesh.vertexBufferIndex], index: vertexBufferIndex });
             if (!instanceOffsetSupported) {
-                commandBuffer.addSetVertexBufferCommand({
+                renderpass.setVertexBufferCommand({
                     vertexBuffer: this.instanceBuffer,
                     index: instanceBufferIndex,
                     offset: offset * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
                 });
             }
-            commandBuffer.addSetIndexBufferCommand(indexBuffers[mesh.indexBufferIndex]);
+            renderpass.setIndexBufferCommand(indexBuffers[mesh.indexBufferIndex]);
             const instanceOffset = instanceOffsetSupported ? offset : 0;
-            commandBuffer.addDrawInstancedIndexedCommand({ indexCount: mesh.indexCount, instanceCount: entities.length, instanceOffset });
+            renderpass.drawInstancedIndexedCommand({ indexCount: mesh.indexCount, instanceCount: entities.length, instanceOffset });
             statistics.increment('rendered-vertices', mesh.vertexCount * entities.length);
             statistics.increment('rendered-triangles', (mesh.indexCount / 3) * entities.length);
             offset += entities.length;
@@ -206,7 +211,9 @@ export class Cell {
         statistics.increment('vertices', -this.vertexCount);
         statistics.increment('triangles', -this.triangleCount);
         for (const entities of this.scene.values()) {
-            addToVec3Pool(entities[0].color);
+            if (entities.length) {
+                addToVec3Pool(entities[0].color);
+            }
             for (const entity of entities) {
                 addToVec3Pool(entity.position);
                 addToVec3Pool(entity.scale);

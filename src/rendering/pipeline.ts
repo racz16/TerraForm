@@ -1,5 +1,6 @@
 import { isWebGL1, isWebGL2 } from './rendering';
 import { Shader } from './shader';
+import { ColorTextureFormat } from './texture';
 import { GlPipeline } from './webgl/gl-pipeline';
 import { GpuPipeline } from './webgpu/gpu-pipeline';
 
@@ -38,8 +39,12 @@ export interface VertexBufferLayout {
     attributes: VertexAttribute[];
 }
 
+export type PipelineAttachmentFormat = ColorTextureFormat | 'canvas';
+
 export interface PipelineDescriptor {
     label?: string;
     shader: Shader;
     vertexBuffers: VertexBufferLayout[];
+    attachmentFormats: PipelineAttachmentFormat[];
+    depthAttachment?: boolean;
 }

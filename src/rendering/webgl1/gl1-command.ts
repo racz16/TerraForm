@@ -1,8 +1,8 @@
 import { statistics } from '../..';
 import { Command } from '../command';
-import { DrawInstancedIndexedCommandDescriptor, SetVertexBufferCommandDescriptor } from '../command-buffer';
 import { Pipeline, VertexAttributeFormat } from '../pipeline';
 import { getGl1Context } from '../rendering-context';
+import { DrawInstancedIndexedCommandDescriptor, SetVertexBufferCommandDescriptor } from '../renderpass';
 import { Gl1Buffer } from './gl1-buffer';
 
 export class Gl1SetVertexBufferCommand implements Command {
@@ -31,10 +31,11 @@ export class Gl1SetVertexBufferCommand implements Command {
             );
             if (vbl.isInstanced) {
                 getGl1Context().getInstancedRenderingExtension()!.vertexAttribDivisorANGLE(va.index, 1);
-                statistics.increment('api-calls', 1);
+            } else {
+                getGl1Context().getInstancedRenderingExtension()!.vertexAttribDivisorANGLE(va.index, 0);
             }
             context.enableVertexAttribArray(va.index);
-            statistics.increment('api-calls', 2);
+            statistics.increment('api-calls', 3);
         }
     }
 

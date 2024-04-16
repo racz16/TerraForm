@@ -1,5 +1,5 @@
 import { rendering } from '..';
-import { SIZEOF_FLOAT, SIZEOF_SHORT, VEC3_ITEM_COUNT } from '../constants';
+import { SIZEOF_FLOAT, SIZEOF_SHORT, VEC2_ITEM_COUNT, VEC3_ITEM_COUNT } from '../constants';
 import { BufferUsage, createBuffer } from '../rendering/buffer';
 
 export interface Mesh {
@@ -13,33 +13,67 @@ export interface Mesh {
 const SIDE_VERTEX_COUNT = 4;
 const SIDE_TRIANGLE_COUNT = 2;
 const TRIANGLE_VERTEX_COUNT = 3;
-const VERTEX_ATTRIBUTE_COUNT = 2;
 
 export function addQuadMesh(): void {
+    const uvUp = rendering.getCapabilities().uvUp;
+    const top = uvUp ? 1 : 0;
+    const bottom = uvUp ? 0 : 1;
     const vertexBuffer = createBuffer({
         type: 'data-callback',
         callback: (data) => {
             const vertexData = new Float32Array(data);
             vertexData.set([
                 // top-left vertex
-                -0.5, 0, -0.5,
+                //position
+                -1,
+                1,
+                0,
                 //normal
-                0, 1, 0,
+                0,
+                0,
+                1,
+                //uv
+                0,
+                top,
                 // bottom-left vertex
-                -0.5, 0, 0.5,
+                //position
+                -1,
+                -1,
+                0,
                 //normal
-                0, 1, 0,
+                0,
+                0,
+                1,
+                //uv
+                0,
+                bottom,
                 // bottom-right vertex
-                0.5, 0, 0.5,
+                //position
+                1,
+                -1,
+                0,
                 //normal
-                0, 1, 0,
+                0,
+                0,
+                1,
+                //uv
+                1,
+                bottom,
                 // top-right vertex
-                0.5, 0, -0.5,
+                //position
+                1,
+                1,
+                0,
                 //normal
-                0, 1, 0,
+                0,
+                0,
+                1,
+                //uv
+                1,
+                top,
             ]);
         },
-        size: SIDE_VERTEX_COUNT * VERTEX_ATTRIBUTE_COUNT * VEC3_ITEM_COUNT * SIZEOF_FLOAT,
+        size: SIDE_VERTEX_COUNT * (2 * VEC3_ITEM_COUNT + VEC2_ITEM_COUNT) * SIZEOF_FLOAT,
         usage: BufferUsage.VERTEX,
         label: 'Quad vertex buffer',
     });
@@ -72,21 +106,29 @@ export function addCubeMesh(): void {
                 -0.5, 0.5, 0.5,
                 // ---- normal
                 0, 0, 1,
+                // ---- uv
+                0, 0,
                 // -- bottom-left vertex
                 // ---- position
                 -0.5, -0.5, 0.5,
                 // ---- normal
                 0, 0, 1,
+                // ---- uv
+                0, 0,
                 // -- bottom-right vertex
                 // ---- position
                 0.5, -0.5, 0.5,
                 // ---- normal
                 0, 0, 1,
+                // ---- uv
+                0, 0,
                 // -- top-right vertex
                 // ---- position
                 0.5, 0.5, 0.5,
                 // ---- normal
                 0, 0, 1,
+                // ---- uv
+                0, 0,
 
                 // LEFT FACE
                 // -- top-left vertex
@@ -94,21 +136,29 @@ export function addCubeMesh(): void {
                 -0.5, 0.5, -0.5,
                 // ---- normal
                 -1, 0, 0,
+                // ---- uv
+                0, 0,
                 // -- bottom-left vertex
                 // ---- position
                 -0.5, -0.5, -0.5,
                 // ---- normal
                 -1, 0, 0,
+                // ---- uv
+                0, 0,
                 // -- bottom-right vertex
                 // ---- position
                 -0.5, -0.5, 0.5,
                 // ---- normal
                 -1, 0, 0,
+                // ---- uv
+                0, 0,
                 // -- top-right vertex
                 // ---- position
                 -0.5, 0.5, 0.5,
                 // ---- normal
                 -1, 0, 0,
+                // ---- uv
+                0, 0,
 
                 // RIGHT FACE
                 // -- top-left vertex
@@ -116,21 +166,29 @@ export function addCubeMesh(): void {
                 0.5, 0.5, 0.5,
                 // ---- normal
                 1, 0, 0,
+                // ---- uv
+                0, 0,
                 // -- bottom-left vertex
                 // ---- position
                 0.5, -0.5, 0.5,
                 // ---- normal
                 1, 0, 0,
+                // ---- uv
+                0, 0,
                 // -- bottom-right vertex
                 // ---- position
                 0.5, -0.5, -0.5,
                 // ---- normal
                 1, 0, 0,
+                // ---- uv
+                0, 0,
                 // -- top-right vertex
                 // ---- position
                 0.5, 0.5, -0.5,
                 // ---- normal
                 1, 0, 0,
+                // ---- uv
+                0, 0,
 
                 // BACK FACE
                 // -- top-left vertex
@@ -138,21 +196,29 @@ export function addCubeMesh(): void {
                 0.5, 0.5, -0.5,
                 // ---- normal
                 0, 0, -1,
+                // ---- uv
+                0, 0,
                 // -- bottom-left vertex
                 // ---- position
                 0.5, -0.5, -0.5,
                 // ---- normal
                 0, 0, -1,
+                // ---- uv
+                0, 0,
                 // -- bottom-right vertex
                 // ---- position
                 -0.5, -0.5, -0.5,
                 // ---- normal
                 0, 0, -1,
+                // ---- uv
+                0, 0,
                 // -- top-right vertex
                 // ---- position
                 -0.5, 0.5, -0.5,
                 // ---- normal
                 0, 0, -1,
+                // ---- uv
+                0, 0,
 
                 // TOP FACE
                 // -- top-left vertex
@@ -160,21 +226,29 @@ export function addCubeMesh(): void {
                 -0.5, 0.5, -0.5,
                 // ---- normal
                 0, 1, 0,
+                // ---- uv
+                0, 0,
                 // -- bottom-left vertex
                 // ---- position
                 -0.5, 0.5, 0.5,
                 // ---- normal
                 0, 1, 0,
+                // ---- uv
+                0, 0,
                 // -- bottom-right vertex
                 // ---- position
                 0.5, 0.5, 0.5,
                 // ---- normal
                 0, 1, 0,
+                // ---- uv
+                0, 0,
                 // -- top-right vertex
                 // ---- position
                 0.5, 0.5, -0.5,
                 // ---- normal
                 0, 1, 0,
+                // ---- uv
+                0, 0,
 
                 // BOTTOM FACE
                 // -- top-left vertex
@@ -182,24 +256,32 @@ export function addCubeMesh(): void {
                 -0.5, -0.5, 0.5,
                 // ---- normal
                 0, -1, 0,
+                // ---- uv
+                0, 0,
                 // -- bottom-left vertex
                 // ---- position
                 -0.5, -0.5, -0.5,
                 // ---- normal
                 0, -1, 0,
+                // ---- uv
+                0, 0,
                 // -- bottom-right vertex
                 // ---- position
                 0.5, -0.5, -0.5,
                 // ---- normal
                 0, -1, 0,
+                // ---- uv
+                0, 0,
                 // -- top-right vertex
                 // ---- position
                 0.5, -0.5, 0.5,
                 // ---- normal
                 0, -1, 0,
+                // ---- uv
+                0, 0,
             ]);
         },
-        size: SIDE_COUNT * SIDE_VERTEX_COUNT * VERTEX_ATTRIBUTE_COUNT * VEC3_ITEM_COUNT * SIZEOF_FLOAT,
+        size: SIDE_COUNT * SIDE_VERTEX_COUNT * (2 * VEC3_ITEM_COUNT + VEC2_ITEM_COUNT) * SIZEOF_FLOAT,
         usage: BufferUsage.VERTEX,
         label: 'Cube vertex buffer',
     });

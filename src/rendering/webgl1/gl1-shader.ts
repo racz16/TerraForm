@@ -11,8 +11,9 @@ export class Gl1Shader extends GlShader {
         const context = getGl1Context().getId();
         context.bindAttribLocation(this.program, 0, 'vertexPosition');
         context.bindAttribLocation(this.program, 1, 'vertexNormal');
-        context.bindAttribLocation(this.program, 2, 'M');
-        context.bindAttribLocation(this.program, 6, 'color');
-        statistics.increment('api-calls', 4);
+        context.bindAttribLocation(this.program, 2, 'vertexTextureCoordinate');
+        context.bindAttribLocation(this.program, 3, 'M');
+        context.bindAttribLocation(this.program, 7, 'color');
+        statistics.increment('api-calls', 5);
     }
 }

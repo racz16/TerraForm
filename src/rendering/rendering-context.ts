@@ -6,7 +6,6 @@ import { GpuRenderingContext } from './webgpu/gpu-rendering-context';
 
 export interface RenderingContext {
     getId(): any;
-    handleResize(): void;
     stop(): Promise<void>;
     release(): void;
 }

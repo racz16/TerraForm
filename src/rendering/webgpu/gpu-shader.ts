@@ -1,14 +1,15 @@
 import { statistics } from '../..';
-import shaderCode from '../../shader/shader.wgsl';
 import { getGpuContext } from '../rendering-context';
-
 import { Shader, ShaderDescriptor } from '../shader';
+import { ShaderLibrary } from '../shader-library';
 
 export class GpuShader implements Shader {
     private shaderModule: GPUShaderModule;
 
-    public constructor(desriptor: ShaderDescriptor) {
-        this.shaderModule = getGpuContext().getDevice().createShaderModule({ code: shaderCode, label: desriptor.label });
+    public constructor(descriptor: ShaderDescriptor) {
+        this.shaderModule = getGpuContext()
+            .getDevice()
+            .createShaderModule({ code: ShaderLibrary.get(`gpu-${descriptor.name}`), label: descriptor.label });
         statistics.increment('api-calls', 1);
         if (DEVELOPMENT) {
             this.logCompilationInfo();
