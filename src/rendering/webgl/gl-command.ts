@@ -4,7 +4,7 @@ import { Command } from '../command';
 import { isWebGL1, isWebGL2 } from '../rendering';
 import { GlBuffer } from './gl-buffer';
 import { Pipeline } from '../pipeline';
-import { statistics } from '../..';
+import { rendering, statistics } from '../..';
 import { GlShader } from './gl-shader';
 import { getGl1Context, getGl2Context } from '../rendering-context';
 import { RenderpassDescriptor, SetIndexedUniformCommandDescriptor, SetUniformCommandDescriptor } from '../renderpass';
@@ -20,7 +20,8 @@ export class GlStartRenderpassCommand implements Command {
 
     public execute(): void {
         const context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
-        context.viewport(0, 0, window.innerWidth, window.innerHeight);
+        const canvas = rendering.getCanvas();
+        context.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
         statistics.increment('api-calls', 1);
         if (this.descriptor.type === 'canvas') {
             context.bindFramebuffer(context.FRAMEBUFFER, null);

@@ -397,8 +397,8 @@ export class Rendering {
         this.color = createTexture({
             type: '2d',
             format: 'rgba8',
-            width: window.innerWidth,
-            height: window.innerHeight,
+            width: this.canvas.clientWidth,
+            height: this.canvas.clientHeight,
             rendered: true,
             sampled: true,
             label: 'color buffer',
@@ -406,8 +406,8 @@ export class Rendering {
         this.depth = createTexture({
             type: '2d',
             format: 'depth',
-            width: window.innerWidth,
-            height: window.innerHeight,
+            width: this.canvas.clientWidth,
+            height: this.canvas.clientHeight,
             rendered: true,
             label: 'depth buffer',
         });

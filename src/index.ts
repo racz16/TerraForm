@@ -36,14 +36,14 @@ export async function main(): Promise<void> {
         time = new Time();
         options = new Options();
         statistics = new Statistics();
-        statisticsUi = new StatisticsUi();
-        cellsDebugUi = new CellsDebugUi();
-        optionsUi = new OptionsUi();
         input = new Input();
-        camera = new Camera();
         player = new Player();
         rendering = new Rendering();
         await rendering.initialize(createCellEntities);
+        camera = new Camera();
+        statisticsUi = new StatisticsUi();
+        cellsDebugUi = new CellsDebugUi();
+        optionsUi = new OptionsUi();
     } catch (error) {
         console.error(error);
         await rendering.release();

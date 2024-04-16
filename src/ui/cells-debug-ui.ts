@@ -1,4 +1,4 @@
-import { options } from '..';
+import { options, rendering } from '..';
 import { Camera } from '../camera';
 import { getElement } from '../utility';
 
@@ -32,7 +32,7 @@ export class CellsDebugUi {
     }
 
     private updateCells(gridSize: number): void {
-        const size = window.innerHeight / 3 / gridSize;
+        const size = rendering.getCanvas().clientHeight / 3 / gridSize;
         for (let i = 0; i < gridSize * gridSize; i++) {
             const div = document.createElement('div');
             div.style.width = `${size}px`;

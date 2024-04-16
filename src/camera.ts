@@ -88,7 +88,8 @@ export class Camera {
 
     private updateP(): void {
         const fovY = glMatrix.toRadian(options.getFovY());
-        const aspectRatio = window.innerWidth / window.innerHeight;
+        const canvas = rendering.getCanvas();
+        const aspectRatio = canvas.clientWidth / canvas.clientHeight;
         const farPlane = options.getViewDistance();
         if (rendering.getCapabilities().isNdcCube) {
             mat4.perspectiveNO(this.P, fovY, aspectRatio, 0.5, farPlane);

@@ -1,6 +1,7 @@
 import { glMatrix, mat2, mat3, mat4, quat, vec2, vec3, vec4 } from 'gl-matrix';
 
 import { SIZEOF_FLOAT, MAT4_ITEM_COUNT } from './constants';
+import { rendering } from '.';
 
 export type MathType = vec2 | vec3 | vec4 | mat2 | mat3 | mat4 | quat;
 
@@ -45,7 +46,11 @@ export function nanoSecondsToMilliseconds(timeInNanoseconds: number): number {
     return timeInNanoseconds / 1000 / 1000;
 }
 
-export function fovYToFovX(fovY: number, aspectRatio = window.innerWidth / window.innerHeight): number {
+export function fovYToFovX(fovY: number, aspectRatio?: number): number {
+    if (!aspectRatio) {
+        const canvas = rendering.getCanvas();
+        aspectRatio = canvas.clientWidth / canvas.clientHeight;
+    }
     return 2 * Math.atan(Math.tan(glMatrix.toRadian(fovY) * 0.5) * aspectRatio);
 }
 
