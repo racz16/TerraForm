@@ -2,6 +2,7 @@ export type StatisticKey =
     | 'api-calls'
     | 'draw-calls'
     | 'buffer-data'
+    | 'texture-data'
     | 'meshes'
     | 'cells'
     | 'rendered-cells'

@@ -6,6 +6,7 @@ import { Texture, Texture2dDescriptor } from '../texture';
 export abstract class GlTexture implements Texture {
     protected context: WebGLRenderingContext | WebGL2RenderingContext;
     protected id: WebGLBuffer;
+    protected size = 0;
 
     public constructor(descriptor: Texture2dDescriptor) {
         this.context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
@@ -26,6 +27,8 @@ export abstract class GlTexture implements Texture {
         this.context.texParameteri(this.context.TEXTURE_2D, this.context.TEXTURE_MAG_FILTER, this.context.NEAREST);
         this.context.texParameteri(this.context.TEXTURE_2D, this.context.TEXTURE_WRAP_S, this.context.CLAMP_TO_EDGE);
         this.context.texParameteri(this.context.TEXTURE_2D, this.context.TEXTURE_WRAP_T, this.context.CLAMP_TO_EDGE);
+        this.size = descriptor.width * descriptor.height * 4;
+        statistics.increment('texture-data', this.size);
         statistics.increment('api-calls', 7);
     }
 
@@ -48,6 +51,7 @@ export abstract class GlTexture implements Texture {
 
     public release(): void {
         this.context.deleteTexture(this.id);
+        statistics.increment('texture-data', -this.size);
         statistics.increment('api-calls', 1);
     }
 }

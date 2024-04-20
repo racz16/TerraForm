@@ -12,6 +12,7 @@ export class StatisticsUi {
     private apiCallsElement: HTMLDivElement;
     private drawCallsElement: HTMLDivElement;
     private bufferDataElement: HTMLDivElement;
+    private textureDataElement: HTMLDivElement;
     private meshesElement: HTMLDivElement;
     private cellsElement: HTMLDivElement;
     private renderedCellsElement: HTMLDivElement;
@@ -32,6 +33,7 @@ export class StatisticsUi {
         this.apiCallsElement = getElement('#api-calls');
         this.drawCallsElement = getElement('#draw-calls');
         this.bufferDataElement = getElement('#buffer-data');
+        this.textureDataElement = getElement('#texture-data');
         this.meshesElement = getElement('#meshes');
         this.cellsElement = getElement('#cells');
         this.renderedCellsElement = getElement('#rendered-cells');
@@ -68,6 +70,7 @@ export class StatisticsUi {
         this.updateElement(this.apiCallsElement, 'API calls', 'api-calls');
         this.updateElement(this.drawCallsElement, 'Draw calls', 'draw-calls');
         this.updateBufferData();
+        this.updateTextureData();
         this.updateElement(this.meshesElement, 'Meshes', 'meshes');
         this.updateElement(this.cellsElement, 'Cells in range', 'cells');
         this.updateElement(this.renderedCellsElement, 'Rendered cells', 'rendered-cells');
@@ -110,6 +113,13 @@ export class StatisticsUi {
         const bufferDataInMegaBytes = bytesToMegaBytes(bufferDataInBytes);
         const bufferDataString = bufferDataInMegaBytes.toFixed(2);
         this.bufferDataElement.textContent = `Memory in buffers: ${bufferDataString} MB`;
+    }
+
+    private updateTextureData(): void {
+        const textureDataInBytes = statistics.getValue('texture-data');
+        const textureDataInMegaBytes = bytesToMegaBytes(textureDataInBytes);
+        const textureDataString = textureDataInMegaBytes.toFixed(2);
+        this.textureDataElement.textContent = `Memory in textures: ${textureDataString} MB`;
     }
 
     private updateElement(element: HTMLDivElement, label: string, key: StatisticKey): void {

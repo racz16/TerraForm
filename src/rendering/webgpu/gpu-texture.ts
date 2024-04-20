@@ -7,6 +7,7 @@ export class GpuTexture implements Texture {
     private sampler: GPUSampler;
     private view?: GPUTextureView;
     private bindGroup?: GPUBindGroup;
+    private size = 0;
 
     public constructor(descriptor: Texture2dDescriptor) {
         this.id = getGpuContext()
@@ -27,6 +28,8 @@ export class GpuTexture implements Texture {
             addressModeV: 'clamp-to-edge',
             addressModeW: 'clamp-to-edge',
         });
+        this.size = descriptor.width * descriptor.height * 4;
+        statistics.increment('texture-data', this.size);
         statistics.increment('api-calls', 2);
     }
 
@@ -84,6 +87,7 @@ export class GpuTexture implements Texture {
 
     public release(): void {
         this.id.destroy();
+        statistics.increment('texture-data', -this.size);
         statistics.increment('api-calls', 1);
     }
 }
