@@ -4,10 +4,13 @@ export class Input {
     private keysDown = new Map<string, KeyboardEvent>();
 
     public constructor() {
-        document.onkeydown = (event) => {
+        window.onblur = () => {
+            this.keysDown.clear();
+        };
+        window.onkeydown = (event) => {
             this.keysDown.set(event.code, event);
         };
-        document.onkeyup = (event: KeyboardEvent) => {
+        window.onkeyup = (event: KeyboardEvent) => {
             this.keysDown.delete(event.code);
         };
         if (DEVELOPMENT) {
