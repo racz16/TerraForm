@@ -50,7 +50,10 @@ export class Gl2TimeQuery extends GlTimeQuery {
     }
 
     public release(): void {
-        this.context.deleteQuery(this.query);
-        statistics.increment('api-calls', 1);
+        if (this.valid) {
+            this.context.deleteQuery(this.query);
+            statistics.increment('api-calls', 1);
+            this.valid = false;
+        }
     }
 }

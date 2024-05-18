@@ -6,6 +6,7 @@ export class GpuRenderingContext implements RenderingContext {
     private canvasFormat!: GPUTextureFormat;
     private context!: GPUCanvasContext;
     private device!: GPUDevice;
+    private valid = true;
 
     public async initialize(): Promise<void> {
         if (DEVELOPMENT) {
@@ -181,8 +182,11 @@ export class GpuRenderingContext implements RenderingContext {
     }
 
     public release(): void {
-        this.context?.unconfigure();
-        this.device?.destroy();
-        statistics.increment('api-calls', 3);
+        if (this.valid) {
+            this.context?.unconfigure();
+            this.device?.destroy();
+            statistics.increment('api-calls', 3);
+            this.valid = false;
+        }
     }
 }

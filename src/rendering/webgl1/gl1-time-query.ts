@@ -51,7 +51,10 @@ export class Gl1TimeQuery extends GlTimeQuery {
     }
 
     public override release(): void {
-        this.gpuTimeExtension.deleteQueryEXT(this.query);
-        statistics.increment('api-calls', 1);
+        if (this.valid) {
+            this.gpuTimeExtension.deleteQueryEXT(this.query);
+            statistics.increment('api-calls', 1);
+            this.valid = false;
+        }
     }
 }

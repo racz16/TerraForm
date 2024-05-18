@@ -9,6 +9,7 @@ export abstract class GlBuffer implements Buffer {
     protected size = 0;
     protected usage: BufferUsage;
     protected target: number;
+    protected valid = true;
 
     public constructor(descriptor: BufferDescriptor) {
         this.context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
@@ -54,9 +55,12 @@ export abstract class GlBuffer implements Buffer {
     public abstract setData(data: BufferDataDescriptor): void;
 
     public release(): void {
-        this.context.deleteBuffer(this.id);
-        statistics.increment('api-calls', 1);
-        statistics.increment('buffer-data', -this.size);
-        this.size = 0;
+        if (this.valid) {
+            this.context.deleteBuffer(this.id);
+            statistics.increment('api-calls', 1);
+            statistics.increment('buffer-data', -this.size);
+            this.size = 0;
+            this.valid = false;
+        }
     }
 }

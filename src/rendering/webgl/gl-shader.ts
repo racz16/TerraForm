@@ -8,6 +8,7 @@ export abstract class GlShader implements Shader {
     protected program: WebGLProgram;
     private uniformLocations = new Map<string, WebGLUniformLocation>();
     private context: WebGLRenderingContext | WebGL2RenderingContext;
+    private valid = true;
 
     public constructor(descriptor: ShaderDescriptor) {
         this.context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
@@ -82,7 +83,10 @@ export abstract class GlShader implements Shader {
     }
 
     public release(): void {
-        this.context.deleteProgram(this.program);
-        statistics.increment('api-calls', 1);
+        if (this.valid) {
+            this.context.deleteProgram(this.program);
+            statistics.increment('api-calls', 1);
+            this.valid = false;
+        }
     }
 }

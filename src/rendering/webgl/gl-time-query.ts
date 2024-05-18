@@ -4,6 +4,7 @@ import { TimeQuery, TimeQueryDescriptor, TimeQueryHandler } from '../time-query'
 export abstract class GlTimeQuery implements TimeQuery {
     protected inProgress = false;
     protected handler: TimeQueryHandler;
+    protected valid = true;
 
     public constructor(descriptor: TimeQueryDescriptor) {
         this.handler = descriptor.handler;

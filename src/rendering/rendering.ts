@@ -578,9 +578,7 @@ export class Rendering {
         this.lambertianRenderpass.release();
         this.quadRenderpass.release();
         this.depth?.release();
-        this.depth = undefined;
         this.color?.release();
-        this.color = undefined;
         this.quadPipeline.getDescriptor().shader.release();
         this.lambertianPipeline.getDescriptor().shader.release();
         this.context.release();

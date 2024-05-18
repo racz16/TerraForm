@@ -206,20 +206,22 @@ export class Cell {
     }
 
     public release(): void {
-        this.instanceBuffer.release();
-        statistics.increment('instances', -this.instanceCount);
-        statistics.increment('vertices', -this.vertexCount);
-        statistics.increment('triangles', -this.triangleCount);
-        for (const entities of this.scene.values()) {
-            if (entities.length) {
-                addToVec3Pool(entities[0].color);
+        if (this.valid) {
+            this.instanceBuffer.release();
+            statistics.increment('instances', -this.instanceCount);
+            statistics.increment('vertices', -this.vertexCount);
+            statistics.increment('triangles', -this.triangleCount);
+            for (const entities of this.scene.values()) {
+                if (entities.length) {
+                    addToVec3Pool(entities[0].color);
+                }
+                for (const entity of entities) {
+                    addToVec3Pool(entity.position);
+                    addToVec3Pool(entity.scale);
+                }
             }
-            for (const entity of entities) {
-                addToVec3Pool(entity.position);
-                addToVec3Pool(entity.scale);
-            }
+            this.scene.clear();
+            this.valid = false;
         }
-        this.scene.clear();
-        this.valid = false;
     }
 }

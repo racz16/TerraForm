@@ -8,6 +8,7 @@ export class GpuTexture implements Texture {
     private view?: GPUTextureView;
     private bindGroup?: GPUBindGroup;
     private size = 0;
+    private valid = true;
 
     public constructor(descriptor: Texture2dDescriptor) {
         this.id = getGpuContext()
@@ -86,8 +87,11 @@ export class GpuTexture implements Texture {
     }
 
     public release(): void {
-        this.id.destroy();
-        statistics.increment('texture-data', -this.size);
-        statistics.increment('api-calls', 1);
+        if (this.valid) {
+            this.id.destroy();
+            statistics.increment('texture-data', -this.size);
+            statistics.increment('api-calls', 1);
+            this.valid = false;
+        }
     }
 }

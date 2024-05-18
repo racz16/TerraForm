@@ -8,6 +8,7 @@ export class GpuBuffer implements Buffer {
     private bindGroup: GPUBindGroup | null = null;
     private size: number;
     private usage: BufferUsage;
+    private valid = true;
 
     public constructor(descriptor: BufferDescriptor) {
         this.usage = descriptor.usage;
@@ -103,9 +104,12 @@ export class GpuBuffer implements Buffer {
     }
 
     public release(): void {
-        this.buffer.destroy();
-        statistics.increment('buffer-data', -this.size);
-        statistics.increment('api-calls', 1);
-        this.size = 0;
+        if (this.valid) {
+            this.buffer.destroy();
+            statistics.increment('buffer-data', -this.size);
+            statistics.increment('api-calls', 1);
+            this.size = 0;
+            this.valid = false;
+        }
     }
 }

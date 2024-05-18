@@ -11,6 +11,7 @@ export class GpuTimeQuery implements TimeQuery {
     private resolveQueryBufer: GPUBuffer;
     private resultQueryBuffer: GPUBuffer;
     private handler: TimeQueryHandler;
+    private valid = true;
 
     public constructor(descriptor: TimeQueryDescriptor) {
         this.querySet = getGpuContext().getDevice().createQuerySet({ label: descriptor.label, count: 2, type: 'timestamp' });
@@ -61,10 +62,13 @@ export class GpuTimeQuery implements TimeQuery {
     }
 
     public release(): void {
-        this.querySet.destroy();
-        this.resolveQueryBufer.destroy();
-        this.resultQueryBuffer.destroy();
-        statistics.increment('buffer-data', -2 * SIZEOF_LONG * GpuTimeQuery.TIMESTAMP_COUNT);
-        statistics.increment('api-calls', 3);
+        if (this.valid) {
+            this.querySet.destroy();
+            this.resolveQueryBufer.destroy();
+            this.resultQueryBuffer.destroy();
+            statistics.increment('buffer-data', -2 * SIZEOF_LONG * GpuTimeQuery.TIMESTAMP_COUNT);
+            statistics.increment('api-calls', 3);
+            this.valid = false;
+        }
     }
 }

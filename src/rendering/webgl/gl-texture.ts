@@ -7,6 +7,7 @@ export abstract class GlTexture implements Texture {
     protected context: WebGLRenderingContext | WebGL2RenderingContext;
     protected id: WebGLBuffer;
     protected size = 0;
+    protected valid = true;
 
     public constructor(descriptor: Texture2dDescriptor) {
         this.context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
@@ -50,8 +51,11 @@ export abstract class GlTexture implements Texture {
     protected abstract getType(descriptor: Texture2dDescriptor): GLenum;
 
     public release(): void {
-        this.context.deleteTexture(this.id);
-        statistics.increment('texture-data', -this.size);
-        statistics.increment('api-calls', 1);
+        if (this.valid) {
+            this.context.deleteTexture(this.id);
+            statistics.increment('texture-data', -this.size);
+            statistics.increment('api-calls', 1);
+            this.valid = false;
+        }
     }
 }
