@@ -24,12 +24,13 @@ import {
     GpuAddDebugLabelCommand,
     GpuSetUniformTextureCommand,
 } from './gpu-command';
+import { GpuCommandBuffer } from './gpu-command-buffer';
 import { GpuPipeline } from './gpu-pipeline';
 import { GpuTexture } from './gpu-texture';
 import { GpuTimeQuery } from './gpu-time-query';
 
 export class GpuRenderpass implements Renderpass {
-    private commandEncoder: GPUCommandEncoder;
+    private commandBuffer: GpuCommandBuffer;
     private descriptor: RenderpassDescriptor;
     private renderPassEncoder!: GPURenderPassEncoder;
     private commands: Command[] = [];
@@ -37,8 +38,8 @@ export class GpuRenderpass implements Renderpass {
     private pipeline?: Pipeline;
     private label?: string;
 
-    public constructor(descriptor: RenderpassDescriptor, commandEncoder: GPUCommandEncoder) {
-        this.commandEncoder = commandEncoder;
+    public constructor(descriptor: RenderpassDescriptor, commandBuffer: GpuCommandBuffer) {
+        this.commandBuffer = commandBuffer;
         this.query = descriptor.query as GpuTimeQuery;
         this.label = descriptor.label;
         this.descriptor = descriptor;
@@ -169,14 +170,18 @@ export class GpuRenderpass implements Renderpass {
     }
 
     public execute(): void {
-        this.renderPassEncoder = this.createRenderPassEncoder(this.descriptor, this.commandEncoder);
+        const commandEncoder = this.commandBuffer.getCommandEncoder();
+        this.renderPassEncoder = this.createRenderPassEncoder(this.descriptor, commandEncoder);
         for (const command of this.commands) {
             command.execute();
         }
+        this.commands.length = 0;
         this.renderPassEncoder.end();
         if (rendering.getCapabilities().gpuTimer && this.query) {
-            this.query.resolve(this.commandEncoder);
+            this.query.resolve(commandEncoder);
         }
         statistics.increment('api-calls', 1);
     }
+
+    public release(): void {}
 }

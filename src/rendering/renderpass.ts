@@ -72,4 +72,5 @@ export interface Renderpass {
     pushDebugGroupCommand(label: string): void;
     popDebugGroupCommand(): void;
     addDebugLabelCommand(label: string): void;
+    release(): void;
 }

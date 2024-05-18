@@ -63,8 +63,11 @@ export class Rendering {
     private cells: Cell[] = [];
     private context!: RenderingContext;
     private cellsPool: Cell[] = [];
-    private color!: Texture;
-    private depth!: Texture;
+    private color?: Texture;
+    private depth?: Texture;
+    private commandBuffer!: CommandBuffer;
+    private lambertianRenderpass!: Renderpass;
+    private quadRenderpass!: Renderpass;
     private capabilities: RenderingCapabilities = {
         gpuTimer: false,
         uniformBuffer: false,
@@ -317,55 +320,34 @@ export class Rendering {
             await this.handleRestart();
         }
         this.handleResize();
-        const commandBuffer = createCommandBuffer('default command buffer');
-        this.renderScene(commandBuffer);
-        this.renderToCanvas(commandBuffer);
-        commandBuffer.execute();
+        this.renderScene();
+        this.renderToCanvas();
+        this.commandBuffer.execute();
     }
 
-    private renderScene(commandBuffer: CommandBuffer): void {
-        const lambertianRenderpass = commandBuffer.createRenderpass({
-            type: 'offscreen',
-            colorAttachments: [
-                {
-                    texture: this.color,
-                    clearColor: [0.7, 0.8, 1, 1],
-                },
-            ],
-            depthStencilAttachment: {
-                texture: this.depth,
-                clearValue: 1,
-            },
-            label: 'lambertian renderpass',
-            query: this.query,
-        });
+    private renderScene(): void {
         if (DEVELOPMENT && this.capabilities.debugGroups) {
-            lambertianRenderpass.pushDebugGroupCommand('frame');
+            this.lambertianRenderpass.pushDebugGroupCommand('frame');
         }
-        lambertianRenderpass.setPipelineCommand(this.lambertianPipeline);
-        this.updateCells(lambertianRenderpass);
-        this.updateUniforms(lambertianRenderpass);
-        this.renderCells(lambertianRenderpass);
+        this.lambertianRenderpass.setPipelineCommand(this.lambertianPipeline);
+        this.updateCells(this.lambertianRenderpass);
+        this.updateUniforms(this.lambertianRenderpass);
+        this.renderCells(this.lambertianRenderpass);
         if (DEVELOPMENT && this.capabilities.debugGroups) {
-            lambertianRenderpass.popDebugGroupCommand();
+            this.lambertianRenderpass.popDebugGroupCommand();
         }
     }
 
-    private renderToCanvas(commandBuffer: CommandBuffer): void {
-        const quadRenderpass = commandBuffer.createRenderpass({
-            type: 'canvas',
-            label: 'canvas renderpass',
-        });
-
+    private renderToCanvas(): void {
         const quadMesh = this.meshes.find((m) => m.name === 'quad');
         if (!quadMesh) {
             throw new Error("Couldn't find quad mesh");
         }
-        quadRenderpass.setPipelineCommand(this.quadPipeline);
-        quadRenderpass.setVertexBufferCommand({ vertexBuffer: this.vertexBuffers[quadMesh.vertexBufferIndex], index: 0 });
-        quadRenderpass.setIndexBufferCommand(this.indexBuffers[quadMesh.indexBufferIndex]);
-        quadRenderpass.setUniformTextureCommand({ name: 'image', value: this.color, index: 0 });
-        quadRenderpass.drawIndexedCommand(quadMesh.indexCount);
+        this.quadRenderpass.setPipelineCommand(this.quadPipeline);
+        this.quadRenderpass.setVertexBufferCommand({ vertexBuffer: this.vertexBuffers[quadMesh.vertexBufferIndex], index: 0 });
+        this.quadRenderpass.setIndexBufferCommand(this.indexBuffers[quadMesh.indexBufferIndex]);
+        this.quadRenderpass.setUniformTextureCommand({ name: 'image', value: this.color!, index: 0 });
+        this.quadRenderpass.drawIndexedCommand(quadMesh.indexCount);
     }
 
     private async handleRestart(): Promise<void> {
@@ -410,6 +392,32 @@ export class Rendering {
             height: this.canvas.clientHeight,
             rendered: true,
             label: 'depth buffer',
+        });
+        if (this.lambertianRenderpass) {
+            this.lambertianRenderpass.release();
+        }
+        if (this.quadRenderpass) {
+            this.quadRenderpass.release();
+        }
+        this.commandBuffer = createCommandBuffer('default command buffer');
+        this.lambertianRenderpass = this.commandBuffer.createRenderpass({
+            type: 'offscreen',
+            colorAttachments: [
+                {
+                    texture: this.color,
+                    clearColor: [0.7, 0.8, 1, 1],
+                },
+            ],
+            depthStencilAttachment: {
+                texture: this.depth,
+                clearValue: 1,
+            },
+            label: 'lambertian renderpass',
+            query: this.query,
+        });
+        this.quadRenderpass = this.commandBuffer.createRenderpass({
+            type: 'canvas',
+            label: 'canvas renderpass',
         });
     }
 
@@ -567,8 +575,12 @@ export class Rendering {
         }
         this.indexBuffers.length = 0;
         this.uniformBuffer?.release();
-        this.depth.release();
-        this.color.release();
+        this.lambertianRenderpass.release();
+        this.quadRenderpass.release();
+        this.depth?.release();
+        this.depth = undefined;
+        this.color?.release();
+        this.color = undefined;
         this.quadPipeline.getDescriptor().shader.release();
         this.lambertianPipeline.getDescriptor().shader.release();
         this.context.release();

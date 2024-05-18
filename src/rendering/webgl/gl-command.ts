@@ -1,83 +1,15 @@
 import { mat2, mat3, mat4, vec2, vec3, vec4 } from 'gl-matrix';
 
 import { Command } from '../command';
-import { isWebGL1, isWebGL2 } from '../rendering';
+import { isWebGL2 } from '../rendering';
 import { GlBuffer } from './gl-buffer';
 import { Pipeline } from '../pipeline';
-import { rendering, statistics } from '../..';
+import { statistics } from '../..';
 import { GlShader } from './gl-shader';
 import { getGl1Context, getGl2Context } from '../rendering-context';
-import { RenderpassDescriptor, SetIndexedUniformCommandDescriptor, SetUniformCommandDescriptor } from '../renderpass';
+import { SetIndexedUniformCommandDescriptor, SetUniformCommandDescriptor } from '../renderpass';
 import { Texture } from '../texture';
 import { GlTexture } from './gl-texture';
-
-export class GlStartRenderpassCommand implements Command {
-    private descriptor: RenderpassDescriptor;
-
-    public constructor(descriptor: RenderpassDescriptor) {
-        this.descriptor = descriptor;
-    }
-
-    public execute(): void {
-        const context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
-        const canvas = rendering.getCanvas();
-        context.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
-        statistics.increment('api-calls', 1);
-        if (this.descriptor.type === 'canvas') {
-            context.bindFramebuffer(context.FRAMEBUFFER, null);
-            statistics.increment('api-calls', 1);
-        } else {
-            const fbo = context.createFramebuffer();
-            context.bindFramebuffer(context.FRAMEBUFFER, fbo);
-            for (let i = 0; i < this.descriptor.colorAttachments.length; i++) {
-                const colorAttachment = this.descriptor.colorAttachments[i];
-                context.framebufferTexture2D(
-                    context.FRAMEBUFFER,
-                    context.COLOR_ATTACHMENT0 + i,
-                    context.TEXTURE_2D,
-                    colorAttachment.texture.getId(),
-                    0
-                );
-                statistics.increment('api-calls', 1);
-                if (colorAttachment.clearColor) {
-                    const color = colorAttachment.clearColor;
-                    if (isWebGL1()) {
-                        context.clearColor(color[0], color[1], color[2], color[3]);
-                        context.clear(context.COLOR_BUFFER_BIT);
-                        statistics.increment('api-calls', 2);
-                    } else {
-                        const gl2 = getGl2Context().getId();
-                        gl2.clearBufferfv(gl2.COLOR, i, color);
-                        statistics.increment('api-calls', 1);
-                    }
-                }
-            }
-            if (this.descriptor.depthStencilAttachment) {
-                context.framebufferTexture2D(
-                    context.FRAMEBUFFER,
-                    context.DEPTH_ATTACHMENT,
-                    context.TEXTURE_2D,
-                    this.descriptor.depthStencilAttachment.texture.getId(),
-                    0
-                );
-                statistics.increment('api-calls', 1);
-                if (this.descriptor.depthStencilAttachment.clearValue) {
-                    context.clearDepth(this.descriptor.depthStencilAttachment.clearValue);
-                    context.clear(context.DEPTH_BUFFER_BIT);
-                    statistics.increment('api-calls', 2);
-                }
-            }
-            if (this.descriptor.depthStencilAttachment) {
-                context.enable(context.DEPTH_TEST);
-            } else {
-                context.disable(context.DEPTH_TEST);
-            }
-            statistics.increment('api-calls', 3);
-            // TODO: release FBO
-            // context.deleteFramebuffer(fbo);
-        }
-    }
-}
 
 export class GlSetPipelneCommand implements Command {
     private pipeline: Pipeline;

@@ -5,25 +5,29 @@ import { Renderpass, RenderpassDescriptor } from '../renderpass';
 import { GpuRenderpass } from './gpu-renderpass';
 
 export class GpuCommandBuffer implements CommandBuffer {
-    private commandEncoder: GPUCommandEncoder;
+    private commandEncoder!: GPUCommandEncoder;
     private renderpasses: GpuRenderpass[] = [];
     private label?: string;
 
     public constructor(label?: string) {
         this.label = label;
-        this.commandEncoder = getGpuContext()
-            .getDevice()
-            .createCommandEncoder({ label: `${this.label} command encoder` });
-        statistics.increment('api-calls', 1);
+    }
+
+    public getCommandEncoder(): GPUCommandEncoder {
+        return this.commandEncoder;
     }
 
     public createRenderpass(descriptor: RenderpassDescriptor): Renderpass {
-        const renderpass = new GpuRenderpass(descriptor, this.commandEncoder);
+        const renderpass = new GpuRenderpass(descriptor, this);
         this.renderpasses.push(renderpass);
         return renderpass;
     }
 
     public execute(): void {
+        this.commandEncoder = getGpuContext()
+            .getDevice()
+            .createCommandEncoder({ label: `${this.label} command encoder` });
+        statistics.increment('api-calls', 1);
         for (const renderpass of this.renderpasses) {
             renderpass.execute();
         }
