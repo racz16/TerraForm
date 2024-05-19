@@ -5,7 +5,7 @@ import { Texture, Texture2dDescriptor } from '../texture';
 
 export abstract class GlTexture implements Texture {
     protected context: WebGLRenderingContext | WebGL2RenderingContext;
-    protected id: WebGLBuffer;
+    protected id: WebGLTexture;
     protected size = 0;
     protected valid = true;
 
