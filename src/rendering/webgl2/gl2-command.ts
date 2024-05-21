@@ -1,58 +1,42 @@
 import { statistics } from '../..';
 import { Command } from '../command';
-import { DrawInstancedIndexedCommandDescriptor, SetIndexedUniformCommandDescriptor, SetVertexBufferCommandDescriptor } from '../renderpass';
-import { Pipeline, VertexAttributeFormat } from '../pipeline';
+import {
+    DrawInstancedIndexedCommandDescriptor,
+    SetIndexedUniformCommandDescriptor,
+    SetDrawConfigCommandDescriptor,
+    SetVertexBufferCommandDescriptor,
+} from '../renderpass';
 import { getGl2Context } from '../rendering-context';
 import { Shader } from '../shader';
 import { Gl2Buffer } from './gl2-buffer';
 import { Gl2Shader } from './gl2-shader';
 import { Buffer } from '../buffer';
+import { Gl2DrawConfig } from './gl2-draw-config';
 
 export class Gl2SetVertexBufferCommand implements Command {
-    private pipeline: Pipeline;
     private descriptor: SetVertexBufferCommandDescriptor;
 
-    public constructor(descriptor: SetVertexBufferCommandDescriptor, pipeline: Pipeline) {
+    public constructor(descriptor: SetVertexBufferCommandDescriptor) {
         this.descriptor = descriptor;
-        this.pipeline = pipeline;
     }
 
     public execute(): void {
-        const vertexBuffer = this.descriptor.vertexBuffer as Gl2Buffer;
-        const context = getGl2Context().getId();
-        context.bindBuffer(context.ARRAY_BUFFER, vertexBuffer.getId());
-        statistics.increment('api-calls', 1);
-        const vbl = this.pipeline.getDescriptor().vertexBuffers[this.descriptor.index];
-        for (const va of vbl.attributes) {
-            context.vertexAttribPointer(
-                va.index,
-                this.getSize(va.format),
-                context.FLOAT,
-                false,
-                vbl.stride,
-                va.offset + (this.descriptor.offset ?? 0)
-            );
-            if (vbl.isInstanced) {
-                context.vertexAttribDivisor(va.index, 1);
-            } else {
-                context.vertexAttribDivisor(va.index, 0);
-            }
-            context.enableVertexAttribArray(va.index);
-            statistics.increment('api-calls', 3);
-        }
+        getGl2Context().configVbo(this.descriptor);
+    }
+}
+
+export class Gl2SetDrawConfigCommand implements Command {
+    private descriptor: SetDrawConfigCommandDescriptor;
+
+    public constructor(descriptor: SetDrawConfigCommandDescriptor) {
+        this.descriptor = descriptor;
     }
 
-    private getSize(format: VertexAttributeFormat): number {
-        switch (format) {
-            case VertexAttributeFormat.FLOAT_1:
-                return 1;
-            case VertexAttributeFormat.FLOAT_2:
-                return 2;
-            case VertexAttributeFormat.FLOAT_3:
-                return 3;
-            case VertexAttributeFormat.FLOAT_4:
-                return 4;
-        }
+    public execute(): void {
+        const mesh = this.descriptor.drawConfig as Gl2DrawConfig;
+        const context = getGl2Context().getId();
+        context.bindVertexArray(mesh.getId());
+        statistics.increment('api-calls', 1);
     }
 }
 
@@ -97,7 +81,9 @@ export class Gl2DrawInstancedIndexedCommand implements Command {
             0,
             this.descriptor.instanceCount
         );
+        context.bindVertexArray(null);
         statistics.increment('draw-calls', 1);
+        statistics.increment('api-calls', 2);
         statistics.increment('rendered-instances', this.descriptor.instanceCount);
     }
 }

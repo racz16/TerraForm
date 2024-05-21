@@ -4,6 +4,7 @@ import {
     GL1_DEPTH_TEXTURE,
     GL1_GPU_TIME_EXTENSION,
     GL1_INSTANCED_RENDERING_EXTENSION,
+    GL1_VERTEX_ARRAY_OBJECT,
 } from '../webgl/gl-extensions';
 import { GlRenderingContext } from '../webgl/gl-rendering-context';
 
@@ -12,6 +13,7 @@ export class Gl1RenderingContext extends GlRenderingContext {
     private gl1GpuTimeExtension: EXTDisjointTimerQuery | null = null;
     private gl1InstancedRenderingExtension: ANGLE_instanced_arrays | null = null;
     private gl1DepthTexture: WEBGL_depth_texture | null = null;
+    private gl1VertexArrayObject: OES_vertex_array_object | null = null;
 
     public initialize(): void {
         this.initializeShared('WebGL 1');
@@ -25,6 +27,7 @@ export class Gl1RenderingContext extends GlRenderingContext {
         this.gl1GpuTimeExtension = this.context.getExtension(GL1_GPU_TIME_EXTENSION);
         this.gl1InstancedRenderingExtension = this.context.getExtension(GL1_INSTANCED_RENDERING_EXTENSION)!;
         this.gl1DepthTexture = this.context.getExtension(GL1_DEPTH_TEXTURE);
+        this.gl1VertexArrayObject = this.context.getExtension(GL1_VERTEX_ARRAY_OBJECT);
         statistics.increment('api-calls', 3);
         let precision: GLint = 0;
         if (this.gl1GpuTimeExtension) {
@@ -40,6 +43,7 @@ export class Gl1RenderingContext extends GlRenderingContext {
         rendering.getCapabilities().debugGroups = false;
         rendering.getCapabilities().depthTexture = !!this.gl1DepthTexture;
         rendering.getCapabilities().uvUp = true;
+        rendering.getCapabilities().vertexArray = !!this.gl1VertexArrayObject;
     }
 
     protected override createContext(): WebGLRenderingContextBase {
@@ -63,5 +67,13 @@ export class Gl1RenderingContext extends GlRenderingContext {
 
     public getDepthTextureExtension(): WEBGL_depth_texture | null {
         return this.gl1DepthTexture;
+    }
+
+    public getVertexArrayObjectExtension(): OES_vertex_array_object | null {
+        return this.gl1VertexArrayObject;
+    }
+
+    protected override vertexAttribDivisor(index: number, divisor: number): void {
+        this.getInstancedRenderingExtension()!.vertexAttribDivisorANGLE(index, divisor);
     }
 }

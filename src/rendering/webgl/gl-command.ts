@@ -33,9 +33,8 @@ export class GlSetIndexBufferCommand implements Command {
     }
 
     public execute(): void {
-        const context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
-        context.bindBuffer(context.ELEMENT_ARRAY_BUFFER, this.indexBuffer.getId());
-        statistics.increment('api-calls', 1);
+        const context = isWebGL2() ? getGl2Context() : getGl1Context();
+        context.configEbo(this.indexBuffer);
     }
 }
 

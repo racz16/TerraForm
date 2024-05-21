@@ -7,6 +7,7 @@ import {
     Renderpass,
     RenderpassDescriptor,
     SetIndexedUniformCommandDescriptor,
+    SetDrawConfigCommandDescriptor,
     SetUniformCommandDescriptor,
     SetVertexBufferCommandDescriptor,
 } from '../renderpass';
@@ -124,6 +125,8 @@ export abstract class GlRenderpass implements Renderpass {
     }
 
     public abstract setVertexBufferCommand(descriptor: SetVertexBufferCommandDescriptor): void;
+
+    public abstract setDrawConfigCommand(descriptor: SetDrawConfigCommandDescriptor): void;
 
     public setIndexBufferCommand(indexBuffer: GlBuffer): void {
         this.commands.push(new GlSetIndexBufferCommand(indexBuffer));

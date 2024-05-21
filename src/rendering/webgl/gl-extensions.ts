@@ -3,6 +3,7 @@ export const GL2_GPU_TIME_EXTENSION = 'EXT_disjoint_timer_query_webgl2';
 export const GL1_INSTANCED_RENDERING_EXTENSION = 'ANGLE_instanced_arrays';
 export const GL_DEBUG_RENDERER_INFO = 'WEBGL_debug_renderer_info';
 export const GL1_DEPTH_TEXTURE = 'WEBGL_depth_texture';
+export const GL1_VERTEX_ARRAY_OBJECT = 'OES_vertex_array_object';
 
 export interface WebGLRenderingContextBase {
     getExtension(extensionName: typeof GL1_GPU_TIME_EXTENSION): EXTDisjointTimerQuery | null;

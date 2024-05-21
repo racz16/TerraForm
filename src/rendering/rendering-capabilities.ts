@@ -7,4 +7,5 @@ export interface RenderingCapabilities {
     instanceOffset: boolean;
     depthTexture: boolean;
     uvUp: boolean;
+    vertexArray: boolean;
 }

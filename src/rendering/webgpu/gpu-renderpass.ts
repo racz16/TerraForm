@@ -8,6 +8,7 @@ import {
     Renderpass,
     RenderpassDescriptor,
     SetIndexedUniformCommandDescriptor,
+    SetDrawConfigCommandDescriptor,
     SetVertexBufferCommandDescriptor,
 } from '../renderpass';
 import { Texture } from '../texture';
@@ -23,6 +24,7 @@ import {
     GpuPopDebugGroupCommand,
     GpuAddDebugLabelCommand,
     GpuSetUniformTextureCommand,
+    GpuSetDrawConfigCommand,
 } from './gpu-command';
 import { GpuCommandBuffer } from './gpu-command-buffer';
 import { GpuPipeline } from './gpu-pipeline';
@@ -97,6 +99,10 @@ export class GpuRenderpass implements Renderpass {
 
     public setVertexBufferCommand(descriptor: SetVertexBufferCommandDescriptor): void {
         this.commands.push(new GpuSetVertexBufferCommand(descriptor, this));
+    }
+
+    public setDrawConfigCommand(descriptor: SetDrawConfigCommandDescriptor): void {
+        this.commands.push(new GpuSetDrawConfigCommand(descriptor, this));
     }
 
     public setIndexBufferCommand(indexBuffer: GpuBuffer): void {

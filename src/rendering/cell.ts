@@ -1,12 +1,14 @@
 import { mat4, quat, vec3, vec4 } from 'gl-matrix';
 
 import { Entity } from '../scene/entity';
-import { Mesh } from '../scene/mesh';
 import { createBuffer, BufferUsage, Buffer } from './buffer';
 import { camera, options, rendering, statistics } from '..';
 import { MAT4_ITEM_COUNT, SIZEOF_FLOAT, VEC3_ITEM_COUNT } from '../constants';
 import { addToVec3Pool } from '../utility';
 import { Renderpass } from './renderpass';
+import { Mesh } from './mesh';
+import { DrawConfig, createDrawConfig } from './draw-config';
+import { INSTANCE_BUFFER_INDEX, instanceLayout } from './layout';
 
 export class Cell {
     private static M = mat4.create();
@@ -15,7 +17,8 @@ export class Cell {
 
     private x = 0;
     private z = 0;
-    private scene = new Map<Mesh, Entity[]>();
+    private entities: Entity[] = [];
+    private drawConfigs: DrawConfig[] = [];
     private entityCount = 0;
     private instanceBuffer!: Buffer;
     private valid = false;
@@ -36,35 +39,53 @@ export class Cell {
         return Cell.maxCellDistance;
     }
 
-    public constructor(scene: Entity[], meshes: Mesh[], x: number, z: number) {
-        this.initialize(scene, meshes, x, z);
+    public constructor(entities: Entity[], meshes: Mesh[], x: number, z: number) {
+        this.initialize(entities, meshes, x, z);
     }
 
-    public initialize(scene: Entity[], meshes: Mesh[], x: number, z: number): void {
+    public initialize(entities: Entity[], meshes: Mesh[], x: number, z: number): void {
         this.x = x;
         this.z = z;
-        this.entityCount = scene.length;
-        this.scene.clear();
-        for (const mesh of meshes) {
-            this.scene.set(
-                mesh,
-                scene.filter((e) => e.mesh === mesh.name)
-            );
-        }
-        this.instanceBuffer = this.createInstanceBuffer();
+        this.entityCount = entities.length;
+        this.entities = entities;
+        this.instanceBuffer = this.createInstanceBuffer(meshes);
+        this.createDrawConfigs(meshes);
         this.valid = true;
-        this.instanceCount = scene.length;
-        statistics.increment('instances', scene.length);
-        this.vertexCount = 0;
-        this.triangleCount = 0;
-        for (const [mesh, entities] of this.scene) {
-            this.vertexCount += mesh.vertexCount * entities.length;
-            this.triangleCount += (mesh.indexCount / 3) * entities.length;
-        }
+        this.instanceCount = entities.length;
+        statistics.increment('instances', entities.length);
         Cell.updateMaxCellDistance();
         if (!this.cornerPoints.length) {
             for (let i = 0; i < 8; i++) {
                 this.cornerPoints.push(vec4.create());
+            }
+        }
+    }
+
+    private createDrawConfigs(meshes: Mesh[]): void {
+        this.vertexCount = 0;
+        this.triangleCount = 0;
+        let offset = 0;
+        for (const drawCOnfig of this.drawConfigs) {
+            drawCOnfig.release();
+        }
+        this.drawConfigs.length = 0;
+        for (const mesh of meshes) {
+            const entityCount = this.entities.filter((e) => e.mesh === mesh.name).length;
+            if (entityCount) {
+                const drawConfig = createDrawConfig({
+                    mesh,
+                    instanceData: {
+                        buffer: this.instanceBuffer,
+                        index: INSTANCE_BUFFER_INDEX,
+                        vertexCount: entityCount,
+                        offset: offset * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
+                        layout: instanceLayout,
+                    },
+                });
+                this.drawConfigs.push(drawConfig);
+                this.vertexCount += mesh.vertexBufferDescriptor.vertexCount * entityCount;
+                this.triangleCount += (mesh.indexBufferDescriptor.indexCount / 3) * entityCount;
+                offset += entityCount;
             }
         }
         statistics.increment('vertices', this.vertexCount);
@@ -83,16 +104,19 @@ export class Cell {
         return this.valid;
     }
 
-    private createInstanceBuffer(): Buffer {
+    private createInstanceBuffer(meshes: Mesh[]): Buffer {
         return createBuffer({
             type: 'data-callback',
             size: this.entityCount * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
             callback: (data) => {
                 const instanceData = new Float32Array(data);
                 let offset = 0;
-                for (const entities of this.scene.values()) {
-                    this.addInstanceData(instanceData, entities, offset);
-                    offset += entities.length;
+                for (const mesh of meshes) {
+                    const entities = this.entities.filter((e) => e.mesh === mesh.name);
+                    if (entities.length) {
+                        this.addInstanceData(instanceData, entities, offset);
+                        offset += entities.length;
+                    }
                 }
             },
             usage: BufferUsage.VERTEX,
@@ -114,39 +138,33 @@ export class Cell {
         }
     }
 
-    public render(renderpass: Renderpass, vertexBuffers: Buffer[], indexBuffers: Buffer[]): void {
+    public render(renderpass: Renderpass): void {
         if (options.isFrustumCulling() && !this.isInFrustum()) {
             return;
         }
         statistics.increment('rendered-cells', 1);
-        const vertexBufferIndex = 0;
-        const instanceBufferIndex = 1;
         let offset = 0;
         const instanceOffsetSupported = rendering.getCapabilities().instanceOffset;
         if (instanceOffsetSupported) {
             renderpass.setVertexBufferCommand({
-                vertexBuffer: this.instanceBuffer,
-                index: instanceBufferIndex,
+                buffer: this.instanceBuffer,
+                index: INSTANCE_BUFFER_INDEX,
+                vertexCount: this.entities.length,
+                layout: instanceLayout,
             });
         }
-        for (const [mesh, entities] of this.scene) {
-            if (!entities.length) {
-                continue;
-            }
-            renderpass.setVertexBufferCommand({ vertexBuffer: vertexBuffers[mesh.vertexBufferIndex], index: vertexBufferIndex });
-            if (!instanceOffsetSupported) {
-                renderpass.setVertexBufferCommand({
-                    vertexBuffer: this.instanceBuffer,
-                    index: instanceBufferIndex,
-                    offset: offset * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
-                });
-            }
-            renderpass.setIndexBufferCommand(indexBuffers[mesh.indexBufferIndex]);
+        for (const drawConfig of this.drawConfigs) {
+            const instanceCount = drawConfig.getInstanceData()?.vertexCount ?? 1;
+            renderpass.setDrawConfigCommand({ drawConfig: drawConfig });
             const instanceOffset = instanceOffsetSupported ? offset : 0;
-            renderpass.drawInstancedIndexedCommand({ indexCount: mesh.indexCount, instanceCount: entities.length, instanceOffset });
-            statistics.increment('rendered-vertices', mesh.vertexCount * entities.length);
-            statistics.increment('rendered-triangles', (mesh.indexCount / 3) * entities.length);
-            offset += entities.length;
+            renderpass.drawInstancedIndexedCommand({
+                indexCount: drawConfig.getMesh().indexBufferDescriptor.indexCount,
+                instanceCount,
+                instanceOffset,
+            });
+            statistics.increment('rendered-vertices', drawConfig.getMesh().vertexBufferDescriptor.vertexCount * instanceCount);
+            statistics.increment('rendered-triangles', (drawConfig.getMesh().indexBufferDescriptor.indexCount / 3) * instanceCount);
+            offset += instanceCount;
         }
     }
 
@@ -199,9 +217,10 @@ export class Cell {
         return vec4.scale(point, point, 1 / Math.abs(point[3]));
     }
 
-    public reset(): void {
+    public reset(meshes: Mesh[]): void {
         this.instanceBuffer.release();
-        this.instanceBuffer = this.createInstanceBuffer();
+        this.instanceBuffer = this.createInstanceBuffer(meshes);
+        this.createDrawConfigs(meshes);
         Cell.updateMaxCellDistance();
     }
 
@@ -211,16 +230,19 @@ export class Cell {
             statistics.increment('instances', -this.instanceCount);
             statistics.increment('vertices', -this.vertexCount);
             statistics.increment('triangles', -this.triangleCount);
-            for (const entities of this.scene.values()) {
-                if (entities.length) {
-                    addToVec3Pool(entities[0].color);
-                }
-                for (const entity of entities) {
-                    addToVec3Pool(entity.position);
-                    addToVec3Pool(entity.scale);
-                }
+            for (const entity of this.entities) {
+                addToVec3Pool(entity.position);
+                addToVec3Pool(entity.rotation);
+                addToVec3Pool(entity.scale);
             }
-            this.scene.clear();
+            for (const drawConfig of this.drawConfigs) {
+                const entity = this.entities.find((e) => e.mesh === drawConfig.getMesh().name);
+                if (entity) {
+                    addToVec3Pool(entity.color);
+                }
+                drawConfig.release();
+            }
+            this.drawConfigs.length = 0;
             this.valid = false;
         }
     }

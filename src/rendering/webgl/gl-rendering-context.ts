@@ -1,4 +1,7 @@
 import { main, rendering, statistics } from '../..';
+import { Buffer } from '../buffer';
+import { VertexBufferDescriptor } from '../mesh';
+import { VertexAttributeFormat } from '../pipeline';
 import { RenderingContext } from '../rendering-context';
 import { GL_DEBUG_RENDERER_INFO } from './gl-extensions';
 
@@ -75,6 +78,54 @@ export abstract class GlRenderingContext implements RenderingContext {
     public async stop(): Promise<void> {
         this.context.flush();
         statistics.increment('api-calls', 1);
+    }
+
+    protected abstract vertexAttribDivisor(index: number, divisor: number): void;
+
+    public configVbo(descriptor: VertexBufferDescriptor): void {
+        this.context.bindBuffer(this.context.ARRAY_BUFFER, descriptor.buffer.getId());
+        statistics.increment('api-calls', 1);
+        const layout = descriptor.layout;
+        for (const va of layout.attributes) {
+            this.context.vertexAttribPointer(
+                va.index,
+                this.getVertexAttribPointerSize(va.format),
+                this.context.FLOAT,
+                false,
+                layout.stride,
+                va.offset + (descriptor.offset ?? 0)
+            );
+            const instanced = layout.isInstanced ? 1 : 0;
+            this.vertexAttribDivisor(va.index, instanced);
+            this.context.enableVertexAttribArray(va.index);
+            statistics.increment('api-calls', 3);
+        }
+    }
+
+    public configEbo(buffer: Buffer): void {
+        this.context.bindBuffer(this.context.ELEMENT_ARRAY_BUFFER, buffer.getId());
+        statistics.increment('api-calls', 1);
+    }
+
+    protected getVertexAttribPointerSize(format: VertexAttributeFormat): number {
+        switch (format) {
+            case VertexAttributeFormat.FLOAT_1:
+                return 1;
+            case VertexAttributeFormat.FLOAT_2:
+                return 2;
+            case VertexAttributeFormat.FLOAT_3:
+                return 3;
+            case VertexAttributeFormat.FLOAT_4:
+                return 4;
+        }
+    }
+
+    public configDraw(vertexDescriptor: VertexBufferDescriptor, indexBuffer: Buffer, instanceDescriptor?: VertexBufferDescriptor): void {
+        this.configVbo(vertexDescriptor);
+        if (instanceDescriptor) {
+            this.configVbo(instanceDescriptor);
+        }
+        this.configEbo(indexBuffer);
     }
 
     public release(): void {}

@@ -4,11 +4,13 @@ import { Pipeline } from './pipeline';
 import { Buffer } from './buffer';
 import { Texture } from './texture';
 import { TimeQuery } from './time-query';
+import { DrawConfig } from './draw-config';
+import { VertexBufferDescriptor } from './mesh';
 
-export interface SetVertexBufferCommandDescriptor {
-    vertexBuffer: Buffer;
-    index: number;
-    offset?: number;
+export interface SetVertexBufferCommandDescriptor extends VertexBufferDescriptor {}
+
+export interface SetDrawConfigCommandDescriptor {
+    drawConfig: DrawConfig;
 }
 
 export interface SetUniformCommandDescriptor<T> {
@@ -56,6 +58,7 @@ export type RenderpassDescriptor = OffscreenRenderpassDescriptor | CanvasRenderp
 
 export interface Renderpass {
     setPipelineCommand(pipeline: Pipeline): void;
+    setDrawConfigCommand(descriptor: SetDrawConfigCommandDescriptor): void;
     setVertexBufferCommand(descriptor: SetVertexBufferCommandDescriptor): void;
     setIndexBufferCommand(indexBuffer: Buffer): void;
     setUniformBufferCommand(descriptor: SetIndexedUniformCommandDescriptor<Buffer>): void;

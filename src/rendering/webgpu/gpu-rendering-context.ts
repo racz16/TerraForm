@@ -1,5 +1,8 @@
 import { main, rendering, statistics } from '../../index';
+import { Buffer } from '../buffer';
+import { VertexBufferDescriptor } from '../mesh';
 import { RenderingContext } from '../rendering-context';
+import { GpuRenderpass } from './gpu-renderpass';
 
 export class GpuRenderingContext implements RenderingContext {
     private deviceLostCount = 0;
@@ -23,6 +26,7 @@ export class GpuRenderingContext implements RenderingContext {
         rendering.getCapabilities().instanceOffset = true;
         rendering.getCapabilities().depthTexture = true;
         rendering.getCapabilities().uvUp = false;
+        rendering.getCapabilities().vertexArray = false;
         if (DEVELOPMENT) {
             console.groupEnd();
         }
@@ -174,6 +178,16 @@ export class GpuRenderingContext implements RenderingContext {
         }
         statistics.increment('api-calls', 3);
         return context;
+    }
+
+    public configVertexBuffer(renderpass: GpuRenderpass, descriptor: VertexBufferDescriptor): void {
+        renderpass.getEncoder().setVertexBuffer(descriptor.index, descriptor.buffer.getId(), descriptor.offset ?? 0);
+        statistics.increment('api-calls', 1);
+    }
+
+    public configIndexBuffer(renderpass: GpuRenderpass, buffer: Buffer): void {
+        renderpass.getEncoder().setIndexBuffer(buffer.getId(), 'uint16');
+        statistics.increment('api-calls', 1);
     }
 
     public async stop(): Promise<void> {

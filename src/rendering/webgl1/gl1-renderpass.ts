@@ -1,10 +1,14 @@
-import { DrawInstancedIndexedCommandDescriptor, SetVertexBufferCommandDescriptor } from '../renderpass';
+import { DrawInstancedIndexedCommandDescriptor, SetDrawConfigCommandDescriptor, SetVertexBufferCommandDescriptor } from '../renderpass';
 import { GlRenderpass } from '../webgl/gl-renderpass';
-import { Gl1DrawInstancedIndexedCommand, Gl1SetVertexBufferCommand } from './gl1-command';
+import { Gl1DrawInstancedIndexedCommand, Gl1SetDrawConfigCommand, Gl1SetVertexBufferCommand } from './gl1-command';
 
 export class Gl1Renderpass extends GlRenderpass {
     public override setVertexBufferCommand(descriptor: SetVertexBufferCommandDescriptor): void {
-        this.commands.push(new Gl1SetVertexBufferCommand(descriptor, this.pipeline!));
+        this.commands.push(new Gl1SetVertexBufferCommand(descriptor));
+    }
+
+    public override setDrawConfigCommand(descriptor: SetDrawConfigCommandDescriptor): void {
+        this.commands.push(new Gl1SetDrawConfigCommand(descriptor));
     }
 
     public override setUniformBufferCommand(): void {

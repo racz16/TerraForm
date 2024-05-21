@@ -1,6 +1,11 @@
 import { statistics } from '../..';
 import { Command } from '../command';
-import { DrawInstancedIndexedCommandDescriptor, SetIndexedUniformCommandDescriptor, SetVertexBufferCommandDescriptor } from '../renderpass';
+import {
+    DrawInstancedIndexedCommandDescriptor,
+    SetIndexedUniformCommandDescriptor,
+    SetDrawConfigCommandDescriptor,
+    SetVertexBufferCommandDescriptor,
+} from '../renderpass';
 import { Pipeline } from '../pipeline';
 import { GpuBuffer } from './gpu-buffer';
 import { GpuPipeline } from './gpu-pipeline';
@@ -8,6 +13,7 @@ import { GpuRenderpass } from './gpu-renderpass';
 import { Texture } from '../texture';
 import { GpuTexture } from './gpu-texture';
 import { Buffer } from '../buffer';
+import { getGpuContext } from '../rendering-context';
 
 export class GpuSetPipelneCommand implements Command {
     private pipeline: Pipeline;
@@ -34,9 +40,7 @@ export class GpuSetVertexBufferCommand implements Command {
     }
 
     public execute(): void {
-        const vertexBuffer = this.descriptor.vertexBuffer as GpuBuffer;
-        this.renderpass.getEncoder().setVertexBuffer(this.descriptor.index, vertexBuffer.getId(), this.descriptor.offset ?? 0);
-        statistics.increment('api-calls', 1);
+        getGpuContext().configVertexBuffer(this.renderpass, this.descriptor);
     }
 }
 
@@ -50,8 +54,23 @@ export class GpuSetIndexBufferCommand implements Command {
     }
 
     public execute(): void {
-        this.renderpass.getEncoder().setIndexBuffer(this.indexBuffer.getId(), 'uint16');
-        statistics.increment('api-calls', 1);
+        getGpuContext().configIndexBuffer(this.renderpass, this.indexBuffer);
+    }
+}
+
+export class GpuSetDrawConfigCommand implements Command {
+    private descriptor: SetDrawConfigCommandDescriptor;
+    private renderpass: GpuRenderpass;
+
+    public constructor(descriptor: SetDrawConfigCommandDescriptor, renderpass: GpuRenderpass) {
+        this.descriptor = descriptor;
+        this.renderpass = renderpass;
+    }
+
+    public execute(): void {
+        const mesh = this.descriptor.drawConfig.getMesh();
+        getGpuContext().configVertexBuffer(this.renderpass, mesh.vertexBufferDescriptor);
+        getGpuContext().configIndexBuffer(this.renderpass, mesh.indexBufferDescriptor.buffer);
     }
 }
 

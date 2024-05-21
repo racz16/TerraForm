@@ -1,14 +1,6 @@
 import { rendering } from '..';
 import { SIZEOF_FLOAT, SIZEOF_SHORT, VEC2_ITEM_COUNT, VEC3_ITEM_COUNT } from '../constants';
-import { BufferUsage, createBuffer } from '../rendering/buffer';
-
-export interface Mesh {
-    readonly name: string;
-    readonly vertexCount: number;
-    readonly indexCount: number;
-    readonly vertexBufferIndex: number;
-    readonly indexBufferIndex: number;
-}
+import { BufferUsage, createBuffer } from './buffer';
 
 const SIDE_VERTEX_COUNT = 4;
 const SIDE_TRIANGLE_COUNT = 2;

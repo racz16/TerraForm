@@ -35,6 +35,7 @@ export class Gl2RenderingContext extends GlRenderingContext {
         rendering.getCapabilities().debugGroups = false;
         rendering.getCapabilities().depthTexture = true;
         rendering.getCapabilities().uvUp = true;
+        rendering.getCapabilities().vertexArray = true;
     }
 
     protected override createContext(): WebGLRenderingContextBase {
@@ -46,5 +47,9 @@ export class Gl2RenderingContext extends GlRenderingContext {
             console.log('Context created');
         }
         return context;
+    }
+
+    protected override vertexAttribDivisor(index: number, divisor: number): void {
+        this.context.vertexAttribDivisor(index, divisor);
     }
 }

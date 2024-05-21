@@ -1,54 +1,39 @@
-import { statistics } from '../..';
+import { rendering, statistics } from '../..';
 import { Command } from '../command';
-import { Pipeline, VertexAttributeFormat } from '../pipeline';
 import { getGl1Context } from '../rendering-context';
-import { DrawInstancedIndexedCommandDescriptor, SetVertexBufferCommandDescriptor } from '../renderpass';
-import { Gl1Buffer } from './gl1-buffer';
+import { DrawInstancedIndexedCommandDescriptor, SetDrawConfigCommandDescriptor, SetVertexBufferCommandDescriptor } from '../renderpass';
 
 export class Gl1SetVertexBufferCommand implements Command {
-    private pipeline: Pipeline;
     private descriptor: SetVertexBufferCommandDescriptor;
 
-    public constructor(descriptor: SetVertexBufferCommandDescriptor, pipeline: Pipeline) {
+    public constructor(descriptor: SetVertexBufferCommandDescriptor) {
         this.descriptor = descriptor;
-        this.pipeline = pipeline;
     }
 
     public execute(): void {
-        const vertexBuffer = this.descriptor.vertexBuffer as Gl1Buffer;
-        const context = getGl1Context().getId();
-        context.bindBuffer(context.ARRAY_BUFFER, vertexBuffer.getId());
-        statistics.increment('api-calls', 1);
-        const vbl = this.pipeline.getDescriptor().vertexBuffers[this.descriptor.index];
-        for (const va of vbl.attributes) {
-            context.vertexAttribPointer(
-                va.index,
-                this.getSize(va.format),
-                context.FLOAT,
-                false,
-                vbl.stride,
-                va.offset + (this.descriptor.offset ?? 0)
-            );
-            if (vbl.isInstanced) {
-                getGl1Context().getInstancedRenderingExtension()!.vertexAttribDivisorANGLE(va.index, 1);
-            } else {
-                getGl1Context().getInstancedRenderingExtension()!.vertexAttribDivisorANGLE(va.index, 0);
-            }
-            context.enableVertexAttribArray(va.index);
-            statistics.increment('api-calls', 3);
-        }
+        getGl1Context().configVbo(this.descriptor);
+    }
+}
+
+export class Gl1SetDrawConfigCommand implements Command {
+    private descriptor: SetDrawConfigCommandDescriptor;
+
+    public constructor(descriptor: SetDrawConfigCommandDescriptor) {
+        this.descriptor = descriptor;
     }
 
-    private getSize(format: VertexAttributeFormat): number {
-        switch (format) {
-            case VertexAttributeFormat.FLOAT_1:
-                return 1;
-            case VertexAttributeFormat.FLOAT_2:
-                return 2;
-            case VertexAttributeFormat.FLOAT_3:
-                return 3;
-            case VertexAttributeFormat.FLOAT_4:
-                return 4;
+    public execute(): void {
+        if (rendering.getCapabilities().vertexArray) {
+            const mesh = this.descriptor.drawConfig;
+            getGl1Context().getVertexArrayObjectExtension()?.bindVertexArrayOES(mesh.getId());
+            statistics.increment('api-calls', 1);
+        } else {
+            const mesh = this.descriptor.drawConfig.getMesh();
+            getGl1Context().configDraw(
+                mesh.vertexBufferDescriptor,
+                mesh.indexBufferDescriptor.buffer,
+                this.descriptor.drawConfig.getInstanceData()
+            );
         }
     }
 }
@@ -76,6 +61,10 @@ export class Gl1DrawInstancedIndexedCommand implements Command {
                 0,
                 this.descriptor.instanceCount
             );
+        if (rendering.getCapabilities().vertexArray) {
+            getGl1Context().getVertexArrayObjectExtension()!.bindVertexArrayOES(null);
+            statistics.increment('api-calls', 1);
+        }
         statistics.increment('draw-calls', 1);
         statistics.increment('api-calls', 1);
         statistics.increment('rendered-instances', this.descriptor.instanceCount);

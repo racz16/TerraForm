@@ -5,6 +5,7 @@ import { Gl1Buffer } from './webgl1/gl1-buffer';
 import { MathType } from '../utility';
 
 export interface Buffer {
+    getId(): any;
     getSize(): number;
     getUsage(): BufferUsage;
     setData(data: BufferDataDescriptor): void;

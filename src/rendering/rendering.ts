@@ -2,20 +2,23 @@ import { vec3 } from 'gl-matrix';
 
 import { createBuffer, BufferUsage, Buffer } from './buffer';
 import { CommandBuffer, createCommandBuffer } from './command-buffer';
-import { Pipeline, VertexAttributeFormat, createPipeline } from './pipeline';
+import { Pipeline, createPipeline } from './pipeline';
 import { createShader } from './shader';
 import { RenderingCapabilities } from './rendering-capabilities';
 import { TimeQuery, createTimeQuery } from './time-query';
-import { Mesh, addCubeMesh, addQuadMesh } from '../scene/mesh';
+import { addCubeMesh, addQuadMesh } from './generated-mesh';
 import { Cell } from './cell';
 import { RenderingApiOption } from '../options';
 import { Entity } from '../scene/entity';
 import { camera, cellsDebugUi, options, rendering, statistics, time } from '..';
 import { RenderingContext, createRenderingContext } from './rendering-context';
-import { MAT4_ITEM_COUNT, SIZEOF_FLOAT, VEC2_ITEM_COUNT, VEC3_ITEM_COUNT, VEC4_ITEM_COUNT } from '../constants';
+import { MAT4_ITEM_COUNT, SIZEOF_FLOAT, VEC3_ITEM_COUNT } from '../constants';
 import { Camera } from '../camera';
 import { Texture, createTexture } from './texture';
 import { Renderpass } from './renderpass';
+import { Mesh } from './mesh';
+import { DrawConfig, createDrawConfig } from './draw-config';
+import { instanceLayout, vertexLayout, VERTEX_BUFFER_INDEX } from './layout';
 
 export enum RenderingApi {
     WEBGL_1 = 1,
@@ -68,6 +71,7 @@ export class Rendering {
     private commandBuffer!: CommandBuffer;
     private lambertianRenderpass!: Renderpass;
     private quadRenderpass!: Renderpass;
+    private canvasDrawConfig!: DrawConfig;
     private capabilities: RenderingCapabilities = {
         gpuTimer: false,
         uniformBuffer: false,
@@ -77,6 +81,7 @@ export class Rendering {
         instanceOffset: false,
         depthTexture: false,
         uvUp: true,
+        vertexArray: false,
     };
 
     public getRenderingApi(): RenderingApi {
@@ -121,7 +126,7 @@ export class Rendering {
                 this.renderingApi = api;
                 await this.createResources();
                 for (const cell of this.cells) {
-                    cell.reset();
+                    cell.reset(this.meshes);
                 }
                 if (DEVELOPMENT) {
                     console.log('Rendering initialized');
@@ -148,11 +153,22 @@ export class Rendering {
         this.createMeshes();
         this.createUniformBuffer();
         this.recreateRenderpassAttachments();
+        this.createCanvasDrawConfig();
         this.lambertianPipeline = await lambertianPipelinePromise;
         this.quadPipeline = await quadPipelinePromise;
         if (DEVELOPMENT) {
             console.log('Pipeline created');
         }
+    }
+
+    private createCanvasDrawConfig(): void {
+        const quadMesh = this.meshes.find((m) => m.name === 'quad');
+        if (!quadMesh) {
+            throw new Error("Couldn't find quad mesh");
+        }
+        this.canvasDrawConfig = createDrawConfig({
+            mesh: quadMesh,
+        });
     }
 
     private getCanvasElement(): HTMLCanvasElement {
@@ -173,73 +189,28 @@ export class Rendering {
     public addMesh(name: string, vertexBuffer: Buffer, indexBuffer: Buffer, vertexCount: number, indexCount: number): void {
         this.vertexBuffers.push(vertexBuffer);
         this.indexBuffers.push(indexBuffer);
-        this.meshes.push({
+        const mesh: Mesh = {
             name,
-            vertexBufferIndex: this.vertexBuffers.length - 1,
-            indexBufferIndex: this.indexBuffers.length - 1,
-            vertexCount,
-            indexCount,
-        });
+            vertexBufferDescriptor: {
+                buffer: vertexBuffer,
+                index: VERTEX_BUFFER_INDEX,
+                vertexCount,
+                layout: vertexLayout,
+            },
+            indexBufferDescriptor: {
+                buffer: indexBuffer,
+                indexCount,
+            },
+        };
+        this.meshes.push(mesh);
     }
 
     private async createLambertianPipeline(): Promise<Pipeline> {
         const shader = createShader({ name: 'lambertian', label: 'lambertian shader' });
-        const vertexPositionIndex = 0;
-        const vertexNormalIndex = 1;
-        const instanceModelMatrixIndex = 3;
-        const instanceColorIndex = 7;
         return createPipeline({
             label: 'lambertian pipeline',
             shader: shader,
-            vertexBuffers: [
-                {
-                    stride: (2 * VEC3_ITEM_COUNT + VEC2_ITEM_COUNT) * SIZEOF_FLOAT,
-                    isInstanced: false,
-                    attributes: [
-                        {
-                            index: vertexPositionIndex,
-                            offset: 0,
-                            format: VertexAttributeFormat.FLOAT_3,
-                        },
-                        {
-                            index: vertexNormalIndex,
-                            offset: VEC3_ITEM_COUNT * SIZEOF_FLOAT,
-                            format: VertexAttributeFormat.FLOAT_3,
-                        },
-                    ],
-                },
-                {
-                    stride: (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
-                    isInstanced: true,
-                    attributes: [
-                        {
-                            index: instanceModelMatrixIndex,
-                            offset: 0,
-                            format: VertexAttributeFormat.FLOAT_4,
-                        },
-                        {
-                            index: instanceModelMatrixIndex + 1,
-                            offset: VEC4_ITEM_COUNT * SIZEOF_FLOAT,
-                            format: VertexAttributeFormat.FLOAT_4,
-                        },
-                        {
-                            index: instanceModelMatrixIndex + 2,
-                            offset: 2 * VEC4_ITEM_COUNT * SIZEOF_FLOAT,
-                            format: VertexAttributeFormat.FLOAT_4,
-                        },
-                        {
-                            index: instanceModelMatrixIndex + 3,
-                            offset: 3 * VEC4_ITEM_COUNT * SIZEOF_FLOAT,
-                            format: VertexAttributeFormat.FLOAT_4,
-                        },
-                        {
-                            index: instanceColorIndex,
-                            offset: MAT4_ITEM_COUNT * SIZEOF_FLOAT,
-                            format: VertexAttributeFormat.FLOAT_3,
-                        },
-                    ],
-                },
-            ],
+            vertexBuffers: [vertexLayout, instanceLayout],
             attachmentFormats: ['rgba8'],
             depthAttachment: true,
         });
@@ -247,29 +218,10 @@ export class Rendering {
 
     private async createQuadPipeline(): Promise<Pipeline> {
         const shader = createShader({ name: 'quad', label: 'quad shader' });
-        const vertexPositionIndex = 0;
-        const vertexTextureCoordinateIndex = 2;
         return createPipeline({
             label: 'quad pipeline',
             shader: shader,
-            vertexBuffers: [
-                {
-                    stride: (2 * VEC3_ITEM_COUNT + VEC2_ITEM_COUNT) * SIZEOF_FLOAT,
-                    isInstanced: false,
-                    attributes: [
-                        {
-                            index: vertexPositionIndex,
-                            offset: 0,
-                            format: VertexAttributeFormat.FLOAT_3,
-                        },
-                        {
-                            index: vertexTextureCoordinateIndex,
-                            offset: 2 * VEC3_ITEM_COUNT * SIZEOF_FLOAT,
-                            format: VertexAttributeFormat.FLOAT_2,
-                        },
-                    ],
-                },
-            ],
+            vertexBuffers: [vertexLayout],
             attachmentFormats: ['canvas'],
         });
     }
@@ -344,10 +296,9 @@ export class Rendering {
             throw new Error("Couldn't find quad mesh");
         }
         this.quadRenderpass.setPipelineCommand(this.quadPipeline);
-        this.quadRenderpass.setVertexBufferCommand({ vertexBuffer: this.vertexBuffers[quadMesh.vertexBufferIndex], index: 0 });
-        this.quadRenderpass.setIndexBufferCommand(this.indexBuffers[quadMesh.indexBufferIndex]);
+        this.quadRenderpass.setDrawConfigCommand({ drawConfig: this.canvasDrawConfig });
         this.quadRenderpass.setUniformTextureCommand({ name: 'image', value: this.color!, index: 0 });
-        this.quadRenderpass.drawIndexedCommand(quadMesh.indexCount);
+        this.quadRenderpass.drawIndexedCommand(quadMesh.indexBufferDescriptor.indexCount);
     }
 
     private async handleRestart(): Promise<void> {
@@ -501,7 +452,7 @@ export class Rendering {
         }
         statistics.set('cells', this.cells.length);
         for (const cell of this.cells) {
-            cell.render(renderpass, this.vertexBuffers, this.indexBuffers);
+            cell.render(renderpass);
         }
         if (DEVELOPMENT && this.capabilities.debugGroups) {
             renderpass.popDebugGroupCommand();
@@ -573,6 +524,7 @@ export class Rendering {
         for (const ib of this.indexBuffers) {
             ib.release();
         }
+        this.canvasDrawConfig.release();
         this.indexBuffers.length = 0;
         this.uniformBuffer?.release();
         this.lambertianRenderpass.release();
