@@ -25,7 +25,6 @@ import {
     GlDrawIndexedCommand,
     GlSetUniformTextureCommand,
 } from './gl-command';
-import { GlShader } from './gl-shader';
 import { GlTimeQuery } from './gl-time-query';
 import { rendering, statistics } from '../..';
 import { Texture } from '../texture';
@@ -135,42 +134,42 @@ export abstract class GlRenderpass implements Renderpass {
     public abstract setUniformBufferCommand(descriptor: SetIndexedUniformCommandDescriptor<Buffer>): void;
 
     public setUniformFloatCommand(descriptor: SetUniformCommandDescriptor<number>): void {
-        const shader = this.pipeline!.getDescriptor().shader as GlShader;
+        const shader = this.pipeline!.getDescriptor().shader;
         this.commands.push(new GlSetUniformFloatCommand(descriptor, shader));
     }
 
     public setUniformVec2Command(descriptor: SetUniformCommandDescriptor<vec2>): void {
-        const shader = this.pipeline!.getDescriptor().shader as GlShader;
+        const shader = this.pipeline!.getDescriptor().shader;
         this.commands.push(new GlSetUniformVec2Command(descriptor, shader));
     }
 
     public setUniformVec3Command(descriptor: SetUniformCommandDescriptor<vec3>): void {
-        const shader = this.pipeline!.getDescriptor().shader as GlShader;
+        const shader = this.pipeline!.getDescriptor().shader;
         this.commands.push(new GlSetUniformVec3Command(descriptor, shader));
     }
 
     public setUniformVec4Command(descriptor: SetUniformCommandDescriptor<vec4>): void {
-        const shader = this.pipeline!.getDescriptor().shader as GlShader;
+        const shader = this.pipeline!.getDescriptor().shader;
         this.commands.push(new GlSetUniformVec4Command(descriptor, shader));
     }
 
     public setUniformMat2Command(descriptor: SetUniformCommandDescriptor<mat2>): void {
-        const shader = this.pipeline!.getDescriptor().shader as GlShader;
+        const shader = this.pipeline!.getDescriptor().shader;
         this.commands.push(new GlSetUniformMat2Command(descriptor, shader));
     }
 
     public setUniformMat3Command(descriptor: SetUniformCommandDescriptor<mat3>): void {
-        const shader = this.pipeline!.getDescriptor().shader as GlShader;
+        const shader = this.pipeline!.getDescriptor().shader;
         this.commands.push(new GlSetUniformMat3Command(descriptor, shader));
     }
 
     public setUniformMat4Command(descriptor: SetUniformCommandDescriptor<mat4>): void {
-        const shader = this.pipeline!.getDescriptor().shader as GlShader;
+        const shader = this.pipeline!.getDescriptor().shader;
         this.commands.push(new GlSetUniformMat4Command(descriptor, shader));
     }
 
     public setUniformTextureCommand(descriptor: SetIndexedUniformCommandDescriptor<Texture>): void {
-        const shader = this.pipeline!.getDescriptor().shader as GlShader;
+        const shader = this.pipeline!.getDescriptor().shader;
         this.commands.push(new GlSetUniformTextureCommand(descriptor, shader));
     }
 

@@ -8,10 +8,8 @@ import {
 } from '../renderpass';
 import { getGl2Context } from '../rendering-context';
 import { Shader } from '../shader';
-import { Gl2Buffer } from './gl2-buffer';
 import { Gl2Shader } from './gl2-shader';
 import { Buffer } from '../buffer';
-import { Gl2DrawConfig } from './gl2-draw-config';
 
 export class Gl2SetVertexBufferCommand implements Command {
     private descriptor: SetVertexBufferCommandDescriptor;
@@ -33,9 +31,9 @@ export class Gl2SetDrawConfigCommand implements Command {
     }
 
     public execute(): void {
-        const mesh = this.descriptor.drawConfig as Gl2DrawConfig;
+        const drawConfig = this.descriptor.drawConfig;
         const context = getGl2Context().getId();
-        context.bindVertexArray(mesh.getId());
+        context.bindVertexArray(drawConfig.getId());
         statistics.increment('api-calls', 1);
     }
 }
@@ -51,7 +49,7 @@ export class Gl2SetUniformBufferCommand implements Command {
 
     public execute(): void {
         const context = getGl2Context().getId();
-        const uniformBuffer = this.descriptor.value as Gl2Buffer;
+        const uniformBuffer = this.descriptor.value;
         const shader = this.shader as Gl2Shader;
         const index = shader.getUniformBlockIndex(this.descriptor.name);
         context.uniformBlockBinding(shader.getId(), index, this.descriptor.index);

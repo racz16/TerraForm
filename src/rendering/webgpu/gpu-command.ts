@@ -8,7 +8,6 @@ import {
 } from '../renderpass';
 import { Pipeline } from '../pipeline';
 import { GpuBuffer } from './gpu-buffer';
-import { GpuPipeline } from './gpu-pipeline';
 import { GpuRenderpass } from './gpu-renderpass';
 import { Texture } from '../texture';
 import { GpuTexture } from './gpu-texture';
@@ -77,9 +76,9 @@ export class GpuSetDrawConfigCommand implements Command {
 export class GpuSetUniformBufferCommand implements Command {
     private descriptor: SetIndexedUniformCommandDescriptor<Buffer>;
     private renderpass: GpuRenderpass;
-    private pipeline: GpuPipeline;
+    private pipeline: Pipeline;
 
-    public constructor(descriptor: SetIndexedUniformCommandDescriptor<Buffer>, renderpass: GpuRenderpass, pipeline: GpuPipeline) {
+    public constructor(descriptor: SetIndexedUniformCommandDescriptor<Buffer>, renderpass: GpuRenderpass, pipeline: Pipeline) {
         this.descriptor = descriptor;
         this.renderpass = renderpass;
         this.pipeline = pipeline;
@@ -96,9 +95,9 @@ export class GpuSetUniformBufferCommand implements Command {
 export class GpuSetUniformTextureCommand implements Command {
     private descriptor: SetIndexedUniformCommandDescriptor<Texture>;
     private renderpass: GpuRenderpass;
-    private pipeline: GpuPipeline;
+    private pipeline: Pipeline;
 
-    public constructor(descriptor: SetIndexedUniformCommandDescriptor<Texture>, renderpass: GpuRenderpass, pipeline: GpuPipeline) {
+    public constructor(descriptor: SetIndexedUniformCommandDescriptor<Texture>, renderpass: GpuRenderpass, pipeline: Pipeline) {
         this.descriptor = descriptor;
         this.renderpass = renderpass;
         this.pipeline = pipeline;

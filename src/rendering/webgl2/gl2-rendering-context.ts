@@ -27,6 +27,7 @@ export class Gl2RenderingContext extends GlRenderingContext {
                 this.gl2GpuTimeExtension.TIME_ELAPSED_EXT,
                 this.gl2GpuTimeExtension.QUERY_COUNTER_BITS_EXT
             ) as GLint;
+            console.log(precision);
             statistics.increment('api-calls', 1);
         }
         rendering.getCapabilities().uniformBuffer = true;

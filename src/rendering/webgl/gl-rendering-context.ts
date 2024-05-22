@@ -62,7 +62,7 @@ export abstract class GlRenderingContext implements RenderingContext {
             powerPreference: 'high-performance',
             depth: false,
             antialias: false,
-        }) as WebGLRenderingContext | null;
+        }) as WebGLRenderingContextBase | null;
         statistics.increment('api-calls', 1);
         rendering.getCanvas().addEventListener('webglcontextlost', (event) => {
             console.log('WebGL context lost', event);

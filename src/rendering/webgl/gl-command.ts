@@ -9,7 +9,7 @@ import { GlShader } from './gl-shader';
 import { getGl1Context, getGl2Context } from '../rendering-context';
 import { SetIndexedUniformCommandDescriptor, SetUniformCommandDescriptor } from '../renderpass';
 import { Texture } from '../texture';
-import { GlTexture } from './gl-texture';
+import { Shader } from '../shader';
 
 export class GlSetPipelneCommand implements Command {
     private pipeline: Pipeline;
@@ -42,9 +42,9 @@ abstract class GlSetUniformCommand<T> implements Command {
     protected descriptor: SetUniformCommandDescriptor<T>;
     private shader: GlShader;
 
-    public constructor(descriptor: SetUniformCommandDescriptor<T>, shader: GlShader) {
+    public constructor(descriptor: SetUniformCommandDescriptor<T>, shader: Shader) {
         this.descriptor = descriptor;
-        this.shader = shader;
+        this.shader = shader as GlShader;
     }
 
     public execute(): void {
@@ -108,14 +108,14 @@ export class GlSetUniformMat4Command extends GlSetUniformCommand<mat4> {
 export class GlSetUniformTextureCommand extends GlSetUniformCommand<Texture> {
     private textureUnit: number;
 
-    public constructor(descriptor: SetIndexedUniformCommandDescriptor<Texture>, shader: GlShader) {
+    public constructor(descriptor: SetIndexedUniformCommandDescriptor<Texture>, shader: Shader) {
         super(descriptor, shader);
         this.textureUnit = descriptor.index;
     }
 
     protected override setUniform(context: WebGL2RenderingContext | WebGLRenderingContext, location: WebGLUniformLocation): void {
         context.activeTexture(context.TEXTURE0 + this.textureUnit);
-        const texture = this.descriptor.value as GlTexture;
+        const texture = this.descriptor.value;
         context.bindTexture(context.TEXTURE_2D, texture.getId());
         context.uniform1i(location, this.textureUnit);
         statistics.increment('api-calls', 3);

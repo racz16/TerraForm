@@ -27,7 +27,6 @@ import {
     GpuSetDrawConfigCommand,
 } from './gpu-command';
 import { GpuCommandBuffer } from './gpu-command-buffer';
-import { GpuPipeline } from './gpu-pipeline';
 import { GpuTexture } from './gpu-texture';
 import { GpuTimeQuery } from './gpu-time-query';
 
@@ -110,8 +109,7 @@ export class GpuRenderpass implements Renderpass {
     }
 
     public setUniformBufferCommand(descriptor: SetIndexedUniformCommandDescriptor<Buffer>): void {
-        const pipeline = this.pipeline! as GpuPipeline;
-        this.commands.push(new GpuSetUniformBufferCommand(descriptor, this, pipeline));
+        this.commands.push(new GpuSetUniformBufferCommand(descriptor, this, this.pipeline!));
     }
 
     public setUniformFloatCommand(): void {
@@ -143,8 +141,7 @@ export class GpuRenderpass implements Renderpass {
     }
 
     public setUniformTextureCommand(descriptor: SetIndexedUniformCommandDescriptor<Texture>): void {
-        const pipeline = this.pipeline! as GpuPipeline;
-        this.commands.push(new GpuSetUniformTextureCommand(descriptor, this, pipeline));
+        this.commands.push(new GpuSetUniformTextureCommand(descriptor, this, this.pipeline!));
     }
 
     public drawIndexedCommand(indexCount: number): void {

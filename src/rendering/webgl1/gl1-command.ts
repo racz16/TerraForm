@@ -24,8 +24,8 @@ export class Gl1SetDrawConfigCommand implements Command {
 
     public execute(): void {
         if (rendering.getCapabilities().vertexArray) {
-            const mesh = this.descriptor.drawConfig;
-            getGl1Context().getVertexArrayObjectExtension()?.bindVertexArrayOES(mesh.getId());
+            const drawConfig = this.descriptor.drawConfig;
+            getGl1Context().getVertexArrayObjectExtension()?.bindVertexArrayOES(drawConfig.getId());
             statistics.increment('api-calls', 1);
         } else {
             const mesh = this.descriptor.drawConfig.getMesh();

@@ -303,7 +303,7 @@ export class Rendering {
 
     private async handleRestart(): Promise<void> {
         await this.release();
-        const newCanvas = this.canvas.cloneNode(false) as HTMLCanvasElement;
+        const newCanvas = document.createElement('canvas');
         this.canvas.replaceWith(newCanvas);
         this.canvas = newCanvas;
         await this.initializeWithApi();
