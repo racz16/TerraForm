@@ -15,17 +15,22 @@ export class OptionsUi {
         this.initializeViewDistance();
         this.initializeCellSize();
         this.initializeInstanceCount();
+        this.initializeFullscreen();
         this.initializeStatistics();
         this.initializeFrustumCulling();
         this.initializeCellsDebugger();
+        this.addKeyDownListener();
+        if (DEVELOPMENT) {
+            console.log('Options UI initialized');
+        }
+    }
+
+    private addKeyDownListener(): void {
         window.addEventListener('keydown', (event) => {
             if (event.code === 'Escape') {
                 this.handleDialogChange(!this.opened);
             }
         });
-        if (DEVELOPMENT) {
-            console.log('Options UI initialized');
-        }
     }
 
     private initializeOpenOptionsButton(): void {
@@ -95,6 +100,21 @@ export class OptionsUi {
         instanceCountInput.value = options.getInstanceCount().toString();
         instanceCountInput.onchange = () => {
             options.setInstanceCount(+instanceCountInput.value);
+        };
+    }
+
+    private initializeFullscreen(): void {
+        const fullscreenInput = getElement<HTMLInputElement>('#fullscreen-input');
+        fullscreenInput.checked = !!document.fullscreenElement;
+        document.addEventListener('fullscreenchange', () => {
+            fullscreenInput.checked = !!document.fullscreenElement;
+        });
+        fullscreenInput.onchange = async () => {
+            if (document.fullscreenElement) {
+                await document.exitFullscreen();
+            } else {
+                await document.documentElement.requestFullscreen();
+            }
         };
     }
 
