@@ -3,11 +3,11 @@ import { RenderingApiOption } from '../options';
 import { getElement } from '../utility';
 
 export class OptionsUi {
-    private dialog: HTMLDialogElement;
+    private dialog = getElement<HTMLDivElement>('#dialog');
     private apiSelector: HTMLSelectElement;
+    private opened = false;
 
     public constructor() {
-        this.dialog = getElement<HTMLDialogElement>('dialog');
         this.initializeOpenOptionsButton();
         this.initializeCloseOptionsButton();
         this.apiSelector = this.initializeApiSelector();
@@ -18,29 +18,43 @@ export class OptionsUi {
         this.initializeStatistics();
         this.initializeFrustumCulling();
         this.initializeCellsDebugger();
+        window.addEventListener('keydown', (event) => {
+            if (event.code === 'Escape') {
+                this.handleDialogChange(!this.opened);
+            }
+        });
         if (DEVELOPMENT) {
             console.log('Options UI initialized');
         }
     }
 
     private initializeOpenOptionsButton(): void {
-        const openButton = getElement<HTMLButtonElement>('#open-options-button');
-        openButton.addEventListener('click', () => {
-            this.dialog.showModal();
-            if (DEVELOPMENT) {
-                console.log('Options UI opened');
-            }
+        const toggleButton = getElement<HTMLButtonElement>('#toggle-options-button');
+        toggleButton.addEventListener('click', () => {
+            this.handleDialogChange(!this.opened);
         });
     }
 
     private initializeCloseOptionsButton(): void {
         const closeButton = getElement<HTMLButtonElement>('#close-options-button');
         closeButton.onclick = () => {
-            this.dialog.close();
+            this.handleDialogChange(false);
+        };
+    }
+
+    private handleDialogChange(opened: boolean): void {
+        this.opened = opened;
+        if (this.opened) {
+            this.dialog.style.left = `calc(100% - ${this.dialog.clientWidth}px)`;
+            if (DEVELOPMENT) {
+                console.log('Options UI opened');
+            }
+        } else {
+            this.dialog.style.left = '100%';
             if (DEVELOPMENT) {
                 console.log('Options UI closed');
             }
-        };
+        }
     }
 
     private initializeApiSelector(): HTMLSelectElement {
@@ -113,6 +127,6 @@ export class OptionsUi {
     }
 
     public isDialogOpened(): boolean {
-        return this.dialog.open;
+        return this.opened;
     }
 }

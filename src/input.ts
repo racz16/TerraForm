@@ -4,15 +4,15 @@ export class Input {
     private keysDown = new Map<string, KeyboardEvent>();
 
     public constructor() {
-        window.onblur = () => {
+        window.addEventListener('blur', () => {
             this.keysDown.clear();
-        };
-        window.onkeydown = (event) => {
+        });
+        window.addEventListener('keydown', (event) => {
             this.keysDown.set(event.code, event);
-        };
-        window.onkeyup = (event: KeyboardEvent) => {
+        });
+        window.addEventListener('keyup', (event) => {
             this.keysDown.delete(event.code);
-        };
+        });
         if (DEVELOPMENT) {
             console.log('Input initialized');
         }
