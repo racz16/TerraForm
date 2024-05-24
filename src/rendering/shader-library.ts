@@ -9,10 +9,10 @@ export class ShaderLibrary {
     private static shaders = new Map<string, string>();
 
     static {
-        ShaderLibrary.shaders.set('gl-vertex-lambertian', lambertianVertexCode);
-        ShaderLibrary.shaders.set('gl-fragment-lambertian', lambertianFragmentCode);
-        ShaderLibrary.shaders.set('gl-vertex-quad', quadVertexCode);
-        ShaderLibrary.shaders.set('gl-fragment-quad', quadFragmentCode);
+        ShaderLibrary.shaders.set('gl-lambertian-vertex', lambertianVertexCode);
+        ShaderLibrary.shaders.set('gl-lambertian-fragment', lambertianFragmentCode);
+        ShaderLibrary.shaders.set('gl-quad-vertex', quadVertexCode);
+        ShaderLibrary.shaders.set('gl-quad-fragment', quadFragmentCode);
         ShaderLibrary.shaders.set('gpu-lambertian', lambertianCode);
         ShaderLibrary.shaders.set('gpu-quad', quadCode);
     }

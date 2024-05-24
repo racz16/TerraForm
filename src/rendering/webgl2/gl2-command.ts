@@ -79,9 +79,8 @@ export class Gl2DrawInstancedIndexedCommand implements Command {
             0,
             this.descriptor.instanceCount
         );
-        context.bindVertexArray(null);
         statistics.increment('draw-calls', 1);
-        statistics.increment('api-calls', 2);
+        statistics.increment('api-calls', 1);
         statistics.increment('rendered-instances', this.descriptor.instanceCount);
     }
 }

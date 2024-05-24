@@ -53,12 +53,12 @@ export class GpuTexture implements Texture {
         return this.sampler;
     }
 
-    public getBindGroup(pipeline: GPURenderPipeline, i: number): GPUBindGroup {
+    public getBindGroup(pipeline: GPURenderPipeline, index: number): GPUBindGroup {
         if (!this.bindGroup) {
             this.bindGroup = getGpuContext()
                 .getDevice()
                 .createBindGroup({
-                    layout: pipeline.getBindGroupLayout(i),
+                    layout: pipeline.getBindGroupLayout(index),
                     entries: [
                         { binding: 0, resource: this.sampler },
                         { binding: 1, resource: this.getView() },

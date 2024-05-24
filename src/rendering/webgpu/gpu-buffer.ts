@@ -15,7 +15,6 @@ export class GpuBuffer implements Buffer {
         this.size = this.computeSize(descriptor);
         this.buffer = this.createBuffer(descriptor);
         this.initializeBufferData(descriptor);
-        statistics.increment('api-calls', 1);
         statistics.increment('buffer-data', this.size);
     }
 
@@ -34,6 +33,7 @@ export class GpuBuffer implements Buffer {
             label: descriptor.label,
             mappedAtCreation: descriptor.type === 'data-callback',
         };
+        statistics.increment('api-calls', 1);
         return getGpuContext().getDevice().createBuffer(nativeDescriptor);
     }
 
@@ -53,15 +53,15 @@ export class GpuBuffer implements Buffer {
         }
     }
 
-    public getBindGroup(pipeline: GPURenderPipeline, i: number): GPUBindGroup {
+    public getBindGroup(pipeline: GPURenderPipeline, index: number): GPUBindGroup {
         if (!this.bindGroup) {
             this.bindGroup = getGpuContext()
                 .getDevice()
                 .createBindGroup({
-                    layout: pipeline.getBindGroupLayout(i),
+                    layout: pipeline.getBindGroupLayout(index),
                     entries: [{ binding: 0, resource: { buffer: this.buffer } }],
                 });
-            statistics.increment('api-calls', 1);
+            statistics.increment('api-calls', 2);
         }
         return this.bindGroup;
     }

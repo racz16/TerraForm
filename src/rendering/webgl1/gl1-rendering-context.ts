@@ -1,4 +1,5 @@
 import { rendering, statistics } from '../..';
+import { ApiError } from '../rendering-context';
 import {
     EXTDisjointTimerQuery,
     GL1_DEPTH_TEXTURE,
@@ -40,16 +41,17 @@ export class Gl1RenderingContext extends GlRenderingContext {
         rendering.getCapabilities().uniformBuffer = false;
         rendering.getCapabilities().gpuTimer = !!(this.gl1GpuTimeExtension && precision);
         rendering.getCapabilities().instancedRendering = !!this.gl1InstancedRenderingExtension;
-        rendering.getCapabilities().debugGroups = false;
         rendering.getCapabilities().depthTexture = !!this.gl1DepthTexture;
-        rendering.getCapabilities().uvUp = true;
         rendering.getCapabilities().vertexArray = !!this.gl1VertexArrayObject;
     }
 
     protected override createContext(): WebGLRenderingContextBase {
         const context = this.getContext('webgl') || this.getContext('webgl-experimental');
         if (!context) {
-            throw new Error("Couldn't create a WebGL 1 context");
+            if (DEVELOPMENT) {
+                console.log("Couldn't create a WebGL 1 context");
+            }
+            throw new ApiError();
         }
         if (DEVELOPMENT) {
             console.log('Context created');

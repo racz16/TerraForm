@@ -47,19 +47,20 @@ export class GpuRenderpass implements Renderpass {
     }
 
     private createRenderPassEncoder(descriptor: RenderpassDescriptor, commandEncoder: GPUCommandEncoder): GPURenderPassEncoder {
-        const depth = descriptor.depthStencilAttachment;
         const renderPassDescriptor: GPURenderPassDescriptor = {
             label: `${this.label} renderpass`,
-            depthStencilAttachment: depth
-                ? {
-                      view: (depth.texture.getId() as GPUTexture).createView(),
-                      depthLoadOp: depth.clearValue ? 'clear' : 'load',
-                      depthClearValue: depth.clearValue,
-                      depthStoreOp: 'store',
-                  }
-                : undefined,
             colorAttachments: this.getColorAttachments(descriptor),
         };
+        const depth = descriptor.depthStencilAttachment;
+        if (depth) {
+            renderPassDescriptor.depthStencilAttachment = {
+                view: (depth.texture.getId() as GPUTexture).createView(),
+                depthLoadOp: depth.clearValue ? 'clear' : 'load',
+                depthClearValue: depth.clearValue,
+                depthStoreOp: 'store',
+            };
+            statistics.increment('api-calls', 1);
+        }
         if (rendering.getCapabilities().gpuTimer && this.query) {
             renderPassDescriptor.timestampWrites = {
                 querySet: this.query.getId(),
@@ -72,6 +73,7 @@ export class GpuRenderpass implements Renderpass {
     }
 
     private getColorAttachments(descriptor: RenderpassDescriptor): GPURenderPassColorAttachment[] {
+        statistics.increment('api-calls', 1);
         if (descriptor.type === 'canvas') {
             return [
                 {

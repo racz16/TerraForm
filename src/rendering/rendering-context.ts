@@ -10,6 +10,8 @@ export interface RenderingContext {
     release(): void;
 }
 
+export class ApiError extends Error {}
+
 export async function createRenderingContext(): Promise<RenderingContext> {
     if (isWebGL1()) {
         const context = new Gl1RenderingContext();

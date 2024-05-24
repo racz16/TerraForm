@@ -27,13 +27,12 @@ export class GpuCommandBuffer implements CommandBuffer {
         this.commandEncoder = getGpuContext()
             .getDevice()
             .createCommandEncoder({ label: `${this.label} command encoder` });
-        statistics.increment('api-calls', 1);
         for (const renderpass of this.renderpasses) {
             renderpass.execute();
         }
         const commandBuffer = this.commandEncoder.finish({ label: this.label });
         getGpuContext().getDevice().queue.submit([commandBuffer]);
-        statistics.increment('api-calls', 2);
+        statistics.increment('api-calls', 3);
         if (rendering.getCapabilities().gpuTimer) {
             for (const renderpass of this.renderpasses) {
                 renderpass.updateQuery();

@@ -1,7 +1,7 @@
 import { main, rendering, statistics } from '../../index';
 import { Buffer } from '../buffer';
 import { VertexBufferDescriptor } from '../mesh';
-import { RenderingContext } from '../rendering-context';
+import { ApiError, RenderingContext } from '../rendering-context';
 import { GpuRenderpass } from './gpu-renderpass';
 
 export class GpuRenderingContext implements RenderingContext {
@@ -12,23 +12,26 @@ export class GpuRenderingContext implements RenderingContext {
     private valid = true;
 
     public async initialize(): Promise<void> {
-        if (DEVELOPMENT) {
-            console.groupCollapsed('Initialize WebGPU');
-        }
-        this.checkWebGPUSupport();
-        const adapter = await this.getAdapter();
-        this.device = await this.createDevice(adapter);
-        this.context = this.getContext();
-        rendering.getCapabilities().isNdcCube = false;
-        rendering.getCapabilities().uniformBuffer = true;
-        rendering.getCapabilities().instancedRendering = true;
-        rendering.getCapabilities().debugGroups = true;
-        rendering.getCapabilities().instanceOffset = true;
-        rendering.getCapabilities().depthTexture = true;
-        rendering.getCapabilities().uvUp = false;
-        rendering.getCapabilities().vertexArray = false;
-        if (DEVELOPMENT) {
-            console.groupEnd();
+        try {
+            if (DEVELOPMENT) {
+                console.groupCollapsed('Initialize WebGPU');
+            }
+            this.checkWebGPUSupport();
+            const adapter = await this.getAdapter();
+            this.device = await this.createDevice(adapter);
+            this.context = this.getContext();
+            rendering.getCapabilities().ndcCube = false;
+            rendering.getCapabilities().uniformBuffer = true;
+            rendering.getCapabilities().instancedRendering = true;
+            rendering.getCapabilities().debugGroups = true;
+            rendering.getCapabilities().instanceOffset = true;
+            rendering.getCapabilities().depthTexture = true;
+            rendering.getCapabilities().uvUp = false;
+            rendering.getCapabilities().vertexArray = false;
+        } finally {
+            if (DEVELOPMENT) {
+                console.groupEnd();
+            }
         }
     }
 
@@ -51,7 +54,10 @@ export class GpuRenderingContext implements RenderingContext {
 
     private checkWebGPUSupport(): void {
         if (!navigator.gpu) {
-            throw new Error("WebGPU isn't supported");
+            if (DEVELOPMENT) {
+                console.log("WebGPU isn't supported");
+            }
+            throw new ApiError();
         }
         if (DEVELOPMENT) {
             console.log('WebGPU is supported');
@@ -199,7 +205,7 @@ export class GpuRenderingContext implements RenderingContext {
         if (this.valid) {
             this.context?.unconfigure();
             this.device?.destroy();
-            statistics.increment('api-calls', 3);
+            statistics.increment('api-calls', 2);
             this.valid = false;
         }
     }

@@ -5,7 +5,7 @@ import { getGl1Context, getGl2Context } from '../rendering-context';
 
 export abstract class GlBuffer implements Buffer {
     protected context: WebGLRenderingContext | WebGL2RenderingContext;
-    protected id: WebGLBuffer;
+    protected id: WebGLBuffer | null;
     protected size = 0;
     protected usage: BufferUsage;
     protected target: number;
@@ -16,7 +16,7 @@ export abstract class GlBuffer implements Buffer {
         this.size = this.computeSize(descriptor);
         this.usage = descriptor.usage;
         this.target = this.getTarget();
-        this.id = this.context.createBuffer()!;
+        this.id = this.context.createBuffer();
         statistics.increment('api-calls', 1);
         this.bind();
         this.initializeBufferData(descriptor);
@@ -31,7 +31,7 @@ export abstract class GlBuffer implements Buffer {
         }
     }
 
-    public getId(): WebGLBuffer {
+    public getId(): WebGLBuffer | null {
         return this.id;
     }
 

@@ -1,9 +1,39 @@
-import { glMatrix, mat2, mat3, mat4, quat, vec2, vec3, vec4 } from 'gl-matrix';
+import {
+    ReadonlyMat2,
+    ReadonlyMat3,
+    ReadonlyMat4,
+    ReadonlyQuat,
+    ReadonlyVec2,
+    ReadonlyVec3,
+    ReadonlyVec4,
+    glMatrix,
+    mat2,
+    mat3,
+    mat4,
+    quat,
+    vec2,
+    vec3,
+    vec4,
+} from 'gl-matrix';
 
 import { SIZEOF_FLOAT, MAT4_ITEM_COUNT } from './constants';
 import { rendering } from '.';
 
-export type MathType = vec2 | vec3 | vec4 | mat2 | mat3 | mat4 | quat;
+export type MathType =
+    | vec2
+    | vec3
+    | vec4
+    | mat2
+    | mat3
+    | mat4
+    | quat
+    | ReadonlyVec2
+    | ReadonlyVec3
+    | ReadonlyVec4
+    | ReadonlyMat2
+    | ReadonlyMat3
+    | ReadonlyMat4
+    | ReadonlyQuat;
 
 const conversionArrayBuffer = new ArrayBuffer(MAT4_ITEM_COUNT * SIZEOF_FLOAT);
 const conversionTypedArrays = createConversionTypedArrays();
@@ -42,6 +72,10 @@ export function secondsToMilliseconds(timeInSeconds: number): number {
     return timeInSeconds * 1000;
 }
 
+export function millisecondsToSeconds(timeInMilliseconds: number): number {
+    return timeInMilliseconds / 1000;
+}
+
 export function nanoSecondsToMilliseconds(timeInNanoseconds: number): number {
     return timeInNanoseconds / 1000 / 1000;
 }
@@ -65,4 +99,11 @@ export function createVec3(x: number, y: number, z: number): vec3 {
 
 export function addToVec3Pool(vec: vec3): void {
     vec3Pool.push(vec);
+}
+
+export function numberSource(source: string): string {
+    return source
+        .split('\n')
+        .map((line, i) => `${i + 1}  ${line}`)
+        .join('\n');
 }

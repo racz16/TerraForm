@@ -53,12 +53,12 @@ export async function main(): Promise<void> {
 
 function createCellEntities(x: number, z: number): Entity[] {
     const scene: Entity[] = [];
-    const BOX_COUNT = options.getInstanceCount();
-    const CELL_SIZE = options.getCellSize();
+    const boxCount = options.getInstanceCount();
+    const cellSize = options.getCellSize();
     let color = createVec3(Math.random(), Math.random(), Math.random());
-    for (let i = 0; i < BOX_COUNT; i++) {
+    for (let i = 0; i < boxCount; i++) {
         const entity: Entity = {
-            position: createVec3(x + Math.random() * CELL_SIZE - CELL_SIZE / 2, 0.5, z + Math.random() * -CELL_SIZE + CELL_SIZE / 2),
+            position: createVec3(x + Math.random() * cellSize - cellSize / 2, 0.5, z + Math.random() * -cellSize + cellSize / 2),
             rotation: createVec3(0, 0, 0),
             scale: createVec3(1, 1, 1),
             mesh: 'cube',
@@ -70,7 +70,7 @@ function createCellEntities(x: number, z: number): Entity[] {
     scene.push({
         position: createVec3(x, 0, z),
         rotation: createVec3(-90, 0, 0),
-        scale: createVec3(CELL_SIZE / 2, CELL_SIZE / 2, 1),
+        scale: createVec3(cellSize / 2, cellSize / 2, 1),
         mesh: 'quad',
         color,
     });

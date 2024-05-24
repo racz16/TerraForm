@@ -1,4 +1,4 @@
-import { glMatrix, mat4, quat, vec3 } from 'gl-matrix';
+import { ReadonlyVec3, glMatrix, mat4, quat, vec3 } from 'gl-matrix';
 
 import { options, rendering } from '.';
 import { fovYToFovX } from './utility';
@@ -7,7 +7,7 @@ export class Camera {
     private static maxFrustumDistance = 0;
 
     private position = vec3.fromValues(0, 5, 15);
-    private rotation = 0;
+    private rotationY = 0;
     private R = mat4.create();
     private q = quat.create();
     private tempVec = vec3.create();
@@ -31,21 +31,21 @@ export class Camera {
         Camera.updateMaxFrustumDistance();
     }
 
-    public getPosition(): vec3 {
+    public getPosition(): ReadonlyVec3 {
         return this.position;
     }
 
-    public move(movement: vec3): void {
+    public move(movement: ReadonlyVec3): void {
         vec3.add(this.position, this.position, movement);
         this.valid = false;
     }
 
-    public getRotation(): number {
-        return this.rotation;
+    public getRotationY(): number {
+        return this.rotationY;
     }
 
-    public rotate(rotation: number): void {
-        this.rotation += rotation;
+    public rotateY(rotationY: number): void {
+        this.rotationY += rotationY;
         this.valid = false;
     }
 
@@ -57,7 +57,7 @@ export class Camera {
         return this.VP;
     }
 
-    public getForward(): vec3 {
+    public getForward(): ReadonlyVec3 {
         if (!this.valid) {
             this.update();
             this.valid = true;
@@ -65,7 +65,7 @@ export class Camera {
         return this.forward;
     }
 
-    public getRight(): vec3 {
+    public getRight(): ReadonlyVec3 {
         if (!this.valid) {
             this.update();
             this.valid = true;
@@ -80,7 +80,7 @@ export class Camera {
     }
 
     private updateV(): void {
-        mat4.fromQuat(this.R, quat.fromEuler(this.q, 0, -this.rotation, 0));
+        mat4.fromQuat(this.R, quat.fromEuler(this.q, 0, -this.rotationY, 0));
         mat4.translate(this.V, this.R, vec3.negate(this.tempVec, this.position));
         vec3.set(this.forward, this.R[8], this.R[9], -this.R[10]);
         vec3.set(this.right, this.R[0], this.R[1], -this.R[2]);
@@ -91,7 +91,7 @@ export class Camera {
         const canvas = rendering.getCanvas();
         const aspectRatio = canvas.clientWidth / canvas.clientHeight;
         const farPlane = options.getViewDistance();
-        if (rendering.getCapabilities().isNdcCube) {
+        if (rendering.getCapabilities().ndcCube) {
             mat4.perspectiveNO(this.P, fovY, aspectRatio, 0.5, farPlane);
         } else {
             mat4.perspectiveZO(this.P, fovY, aspectRatio, 0.5, farPlane);

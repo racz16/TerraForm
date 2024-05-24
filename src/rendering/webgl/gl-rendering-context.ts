@@ -45,8 +45,10 @@ export abstract class GlRenderingContext implements RenderingContext {
                 }
             }
         }
-        rendering.getCapabilities().isNdcCube = true;
+        rendering.getCapabilities().ndcCube = true;
+        rendering.getCapabilities().debugGroups = false;
         rendering.getCapabilities().instanceOffset = false;
+        rendering.getCapabilities().uvUp = true;
         this.capabilitiesAndExtensions();
         if (DEVELOPMENT) {
             console.groupEnd();
@@ -95,7 +97,7 @@ export abstract class GlRenderingContext implements RenderingContext {
                 layout.stride,
                 va.offset + (descriptor.offset ?? 0)
             );
-            const instanced = layout.isInstanced ? 1 : 0;
+            const instanced = layout.instanced ? 1 : 0;
             this.vertexAttribDivisor(va.index, instanced);
             this.context.enableVertexAttribArray(va.index);
             statistics.increment('api-calls', 3);

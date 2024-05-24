@@ -1,4 +1,5 @@
 import { rendering, statistics } from '../..';
+import { ApiError } from '../rendering-context';
 import { EXTDisjointTimerQueryWebGL2, GL2_GPU_TIME_EXTENSION } from '../webgl/gl-extensions';
 import { GlRenderingContext } from '../webgl/gl-rendering-context';
 
@@ -27,22 +28,22 @@ export class Gl2RenderingContext extends GlRenderingContext {
                 this.gl2GpuTimeExtension.TIME_ELAPSED_EXT,
                 this.gl2GpuTimeExtension.QUERY_COUNTER_BITS_EXT
             ) as GLint;
-            console.log(precision);
             statistics.increment('api-calls', 1);
         }
         rendering.getCapabilities().uniformBuffer = true;
         rendering.getCapabilities().gpuTimer = !!(this.gl2GpuTimeExtension && precision);
         rendering.getCapabilities().instancedRendering = true;
-        rendering.getCapabilities().debugGroups = false;
         rendering.getCapabilities().depthTexture = true;
-        rendering.getCapabilities().uvUp = true;
         rendering.getCapabilities().vertexArray = true;
     }
 
     protected override createContext(): WebGLRenderingContextBase {
         const context = this.getContext('webgl2');
         if (!context) {
-            throw new Error("Couldn't create a WebGL 2 context");
+            if (DEVELOPMENT) {
+                console.log("Couldn't create a WebGL 2 context");
+            }
+            throw new ApiError();
         }
         if (DEVELOPMENT) {
             console.log('Context created');

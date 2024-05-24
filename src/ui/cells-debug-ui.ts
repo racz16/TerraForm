@@ -5,11 +5,10 @@ import { getElement } from '../utility';
 type CellDebugState = 'camera' | 'in-frustum' | 'in-range' | 'out-of-range';
 
 export class CellsDebugUi {
-    private grid: HTMLDivElement;
+    private grid = getElement<HTMLDivElement>('#cells-debugger');
     private cellElements: HTMLDivElement[] = [];
 
     public constructor() {
-        this.grid = getElement<HTMLDivElement>('#cells-debugger');
         if (DEVELOPMENT) {
             console.log('Cells debug UI initialized');
         }

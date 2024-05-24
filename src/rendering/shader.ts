@@ -1,3 +1,4 @@
+import { VertexBufferLayout } from './pipeline';
 import { isWebGL1, isWebGL2 } from './rendering';
 import { Gl1Shader } from './webgl1/gl1-shader';
 import { Gl2Shader } from './webgl2/gl2-shader';
@@ -10,6 +11,7 @@ export interface Shader {
 
 export interface ShaderDescriptor {
     name: string;
+    vertexBufferLayouts: VertexBufferLayout[];
     label?: string;
 }
 

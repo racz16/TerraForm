@@ -13,7 +13,7 @@ export enum VertexAttributeFormat {
 
 export interface Pipeline {
     getId(): any;
-    getDescriptor(): PipelineDescriptor;
+    getShader(): Shader;
 }
 
 export async function createPipeline(descriptor: PipelineDescriptor): Promise<Pipeline> {
@@ -29,13 +29,14 @@ export async function createPipeline(descriptor: PipelineDescriptor): Promise<Pi
 
 export interface VertexAttribute {
     index: number;
+    name?: string;
     offset: number;
     format: VertexAttributeFormat;
 }
 
 export interface VertexBufferLayout {
     stride: number;
-    isInstanced: boolean;
+    instanced: boolean;
     attributes: VertexAttribute[];
 }
 
@@ -44,7 +45,7 @@ export type PipelineAttachmentFormat = ColorTextureFormat | 'canvas';
 export interface PipelineDescriptor {
     label?: string;
     shader: Shader;
-    vertexBuffers: VertexBufferLayout[];
+    vertexBufferLayouts: VertexBufferLayout[];
     attachmentFormats: PipelineAttachmentFormat[];
     depthAttachment?: boolean;
 }

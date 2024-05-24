@@ -1,6 +1,7 @@
 import { statistics } from '../..';
 import { Pipeline, PipelineDescriptor, VertexAttributeFormat } from '../pipeline';
 import { getGpuContext } from '../rendering-context';
+import { Shader } from '../shader';
 
 export class GpuPipeline implements Pipeline {
     private pipeline!: GPURenderPipeline;
@@ -11,40 +12,39 @@ export class GpuPipeline implements Pipeline {
     }
 
     public async initialize(): Promise<void> {
-        this.pipeline = await getGpuContext()
-            .getDevice()
-            .createRenderPipelineAsync({
-                vertex: {
-                    module: this.descriptor.shader.getId(),
-                    buffers: this.descriptor.vertexBuffers.map<GPUVertexBufferLayout>((vbl) => ({
-                        arrayStride: vbl.stride,
-                        stepMode: vbl.isInstanced ? 'instance' : 'vertex',
-                        attributes: vbl.attributes.map((a) => ({
-                            shaderLocation: a.index,
-                            offset: a.offset,
-                            format: this.getFormat(a.format),
-                        })),
+        const pipelineDescriptor: GPURenderPipelineDescriptor = {
+            vertex: {
+                module: this.descriptor.shader.getId(),
+                buffers: this.descriptor.vertexBufferLayouts.map<GPUVertexBufferLayout>((vbl) => ({
+                    arrayStride: vbl.stride,
+                    stepMode: vbl.instanced ? 'instance' : 'vertex',
+                    attributes: vbl.attributes.map((a) => ({
+                        shaderLocation: a.index,
+                        offset: a.offset,
+                        format: this.getFormat(a.format),
                     })),
-                },
-                fragment: {
-                    module: this.descriptor.shader.getId(),
-                    targets: this.descriptor.attachmentFormats.map((af) => ({
-                        format: af === 'canvas' ? getGpuContext().getCanvasFormat() : 'rgba8unorm',
-                    })),
-                },
-                depthStencil: this.descriptor.depthAttachment
-                    ? {
-                          format: 'depth32float',
-                          depthWriteEnabled: true,
-                          depthCompare: 'less',
-                      }
-                    : undefined,
-                primitive: {
-                    cullMode: 'back',
-                },
-                layout: 'auto',
-                label: this.descriptor.label,
-            });
+                })),
+            },
+            fragment: {
+                module: this.descriptor.shader.getId(),
+                targets: this.descriptor.attachmentFormats.map((af) => ({
+                    format: af === 'canvas' ? getGpuContext().getCanvasFormat() : 'rgba8unorm',
+                })),
+            },
+            primitive: {
+                cullMode: 'back',
+            },
+            layout: 'auto',
+            label: this.descriptor.label,
+        };
+        if (this.descriptor.depthAttachment) {
+            pipelineDescriptor.depthStencil = {
+                format: 'depth32float',
+                depthWriteEnabled: true,
+                depthCompare: 'less',
+            };
+        }
+        this.pipeline = await getGpuContext().getDevice().createRenderPipelineAsync(pipelineDescriptor);
         statistics.increment('api-calls', 1);
     }
 
@@ -52,8 +52,8 @@ export class GpuPipeline implements Pipeline {
         return this.pipeline;
     }
 
-    public getDescriptor(): PipelineDescriptor {
-        return this.descriptor;
+    public getShader(): Shader {
+        return this.descriptor.shader;
     }
 
     private getFormat(format: VertexAttributeFormat): GPUVertexFormat {

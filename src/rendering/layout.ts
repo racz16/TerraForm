@@ -12,20 +12,23 @@ export const INSTANCE_BUFFER_INDEX = 1;
 
 export const vertexLayout: VertexBufferLayout = {
     stride: (2 * VEC3_ITEM_COUNT + VEC2_ITEM_COUNT) * SIZEOF_FLOAT,
-    isInstanced: false,
+    instanced: false,
     attributes: [
         {
             index: VERTEX_POSITION_INDEX,
+            name: 'vertexPosition',
             offset: 0,
             format: VertexAttributeFormat.FLOAT_3,
         },
         {
             index: VERTEX_NORMAL_INDEX,
+            name: 'vertexNormal',
             offset: VEC3_ITEM_COUNT * SIZEOF_FLOAT,
             format: VertexAttributeFormat.FLOAT_3,
         },
         {
             index: VERTEX_TEXTURE_COORDINATE_INDEX,
+            name: 'vertexTextureCoordinate',
             offset: 2 * VEC3_ITEM_COUNT * SIZEOF_FLOAT,
             format: VertexAttributeFormat.FLOAT_2,
         },
@@ -34,10 +37,11 @@ export const vertexLayout: VertexBufferLayout = {
 
 export const instanceLayout: VertexBufferLayout = {
     stride: (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
-    isInstanced: true,
+    instanced: true,
     attributes: [
         {
             index: INSTANCE_MODEL_MATRIX_INDEX,
+            name: 'M',
             offset: 0,
             format: VertexAttributeFormat.FLOAT_4,
         },
@@ -58,6 +62,7 @@ export const instanceLayout: VertexBufferLayout = {
         },
         {
             index: INSTANCE_COLOR_INDEX,
+            name: 'color',
             offset: MAT4_ITEM_COUNT * SIZEOF_FLOAT,
             format: VertexAttributeFormat.FLOAT_3,
         },

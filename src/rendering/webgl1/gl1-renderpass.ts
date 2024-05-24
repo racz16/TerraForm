@@ -1,3 +1,5 @@
+import { rendering, statistics } from '../..';
+import { getGl1Context } from '../rendering-context';
 import { DrawInstancedIndexedCommandDescriptor, SetDrawConfigCommandDescriptor, SetVertexBufferCommandDescriptor } from '../renderpass';
 import { GlRenderpass } from '../webgl/gl-renderpass';
 import { Gl1DrawInstancedIndexedCommand, Gl1SetDrawConfigCommand, Gl1SetVertexBufferCommand } from './gl1-command';
@@ -17,5 +19,12 @@ export class Gl1Renderpass extends GlRenderpass {
 
     public override drawInstancedIndexedCommand(descriptor: DrawInstancedIndexedCommandDescriptor): void {
         this.commands.push(new Gl1DrawInstancedIndexedCommand(descriptor));
+    }
+
+    protected override unbundVao(): void {
+        if (rendering.getCapabilities().vertexArray) {
+            getGl1Context().getVertexArrayObjectExtension()!.bindVertexArrayOES(null);
+            statistics.increment('api-calls', 1);
+        }
     }
 }

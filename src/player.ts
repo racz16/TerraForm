@@ -53,7 +53,7 @@ export class Player {
             rotation -= speed;
         }
         if (rotation !== 0) {
-            camera.rotate(rotation);
+            camera.rotateY(rotation);
         }
     }
 }

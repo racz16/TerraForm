@@ -14,7 +14,9 @@ export class GpuTimeQuery implements TimeQuery {
     private valid = true;
 
     public constructor(descriptor: TimeQueryDescriptor) {
-        this.querySet = getGpuContext().getDevice().createQuerySet({ label: descriptor.label, count: 2, type: 'timestamp' });
+        this.querySet = getGpuContext()
+            .getDevice()
+            .createQuerySet({ label: descriptor.label, count: GpuTimeQuery.TIMESTAMP_COUNT, type: 'timestamp' });
         this.resolveQueryBufer = getGpuContext()
             .getDevice()
             .createBuffer({
@@ -39,7 +41,7 @@ export class GpuTimeQuery implements TimeQuery {
     }
 
     public resolve(commandEncoder: GPUCommandEncoder): void {
-        commandEncoder.resolveQuerySet(this.querySet, 0, 2, this.resolveQueryBufer, 0);
+        commandEncoder.resolveQuerySet(this.querySet, 0, GpuTimeQuery.TIMESTAMP_COUNT, this.resolveQueryBufer, 0);
         statistics.increment('api-calls', 1);
         if (this.resultQueryBuffer.mapState === 'unmapped') {
             commandEncoder.copyBufferToBuffer(this.resolveQueryBufer, 0, this.resultQueryBuffer, 0, this.resultQueryBuffer.size);

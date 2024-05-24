@@ -22,7 +22,7 @@ export abstract class GlTexture implements Texture {
             0,
             this.getFormat(descriptor),
             this.getType(descriptor),
-            descriptor.data ?? null
+            null
         );
         this.context.texParameteri(this.context.TEXTURE_2D, this.context.TEXTURE_MIN_FILTER, this.context.NEAREST);
         this.context.texParameteri(this.context.TEXTURE_2D, this.context.TEXTURE_MAG_FILTER, this.context.NEAREST);

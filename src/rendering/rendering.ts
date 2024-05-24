@@ -11,7 +11,7 @@ import { Cell } from './cell';
 import { RenderingApiOption } from '../options';
 import { Entity } from '../scene/entity';
 import { camera, cellsDebugUi, options, rendering, statistics, time } from '..';
-import { RenderingContext, createRenderingContext } from './rendering-context';
+import { ApiError, RenderingContext, createRenderingContext } from './rendering-context';
 import { MAT4_ITEM_COUNT, SIZEOF_FLOAT, VEC3_ITEM_COUNT } from '../constants';
 import { Camera } from '../camera';
 import { Texture, createTexture } from './texture';
@@ -56,7 +56,7 @@ export class Rendering {
     private createCell!: (x: number, z: number) => Entity[];
     private lambertianPipeline!: Pipeline;
     private quadPipeline!: Pipeline;
-    private query: TimeQuery | undefined;
+    private query?: TimeQuery;
     private vertexBuffers: Buffer[] = [];
     private indexBuffers: Buffer[] = [];
     private meshes: Mesh[] = [];
@@ -76,7 +76,7 @@ export class Rendering {
         gpuTimer: false,
         uniformBuffer: false,
         instancedRendering: false,
-        isNdcCube: true,
+        ndcCube: true,
         debugGroups: false,
         instanceOffset: false,
         depthTexture: false,
@@ -133,7 +133,9 @@ export class Rendering {
                 }
                 return;
             } catch (e) {
-                continue;
+                if (!(e instanceof ApiError)) {
+                    console.error(e);
+                }
             }
         }
         throw new Error('No rendering API is available');
@@ -206,22 +208,26 @@ export class Rendering {
     }
 
     private async createLambertianPipeline(): Promise<Pipeline> {
-        const shader = createShader({ name: 'lambertian', label: 'lambertian shader' });
+        const shader = createShader({
+            name: 'lambertian',
+            vertexBufferLayouts: [vertexLayout, instanceLayout],
+            label: 'lambertian shader',
+        });
         return createPipeline({
             label: 'lambertian pipeline',
             shader: shader,
-            vertexBuffers: [vertexLayout, instanceLayout],
+            vertexBufferLayouts: [vertexLayout, instanceLayout],
             attachmentFormats: ['rgba8'],
             depthAttachment: true,
         });
     }
 
     private async createQuadPipeline(): Promise<Pipeline> {
-        const shader = createShader({ name: 'quad', label: 'quad shader' });
+        const shader = createShader({ name: 'quad', vertexBufferLayouts: [vertexLayout], label: 'quad shader' });
         return createPipeline({
             label: 'quad pipeline',
             shader: shader,
-            vertexBuffers: [vertexLayout],
+            vertexBufferLayouts: [vertexLayout],
             attachmentFormats: ['canvas'],
         });
     }
@@ -531,8 +537,8 @@ export class Rendering {
         this.quadRenderpass.release();
         this.depth?.release();
         this.color?.release();
-        this.quadPipeline.getDescriptor().shader.release();
-        this.lambertianPipeline.getDescriptor().shader.release();
+        this.quadPipeline.getShader().release();
+        this.lambertianPipeline.getShader().release();
         this.context.release();
         if (DEVELOPMENT) {
             console.log('Rendering released');

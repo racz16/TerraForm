@@ -1,4 +1,5 @@
 import { statistics } from '../..';
+import { VertexBufferLayout } from '../pipeline';
 import { getGl1Context } from '../rendering-context';
 import { GlShader } from '../webgl/gl-shader';
 
@@ -7,13 +8,15 @@ export class Gl1Shader extends GlShader {
         return '';
     }
 
-    protected override setAttributeLocations(): void {
+    protected override setAttributeLocations(vertexBufferLayouts: VertexBufferLayout[]): void {
         const context = getGl1Context().getId();
-        context.bindAttribLocation(this.program, 0, 'vertexPosition');
-        context.bindAttribLocation(this.program, 1, 'vertexNormal');
-        context.bindAttribLocation(this.program, 2, 'vertexTextureCoordinate');
-        context.bindAttribLocation(this.program, 3, 'M');
-        context.bindAttribLocation(this.program, 7, 'color');
-        statistics.increment('api-calls', 5);
+        for (const layout of vertexBufferLayouts) {
+            for (const attribute of layout.attributes) {
+                if (attribute.name) {
+                    context.bindAttribLocation(this.program, attribute.index, attribute.name);
+                    statistics.increment('api-calls', 1);
+                }
+            }
+        }
     }
 }

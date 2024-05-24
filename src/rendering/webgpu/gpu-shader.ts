@@ -1,4 +1,5 @@
 import { statistics } from '../..';
+import { numberSource } from '../../utility';
 import { getGpuContext } from '../rendering-context';
 import { Shader, ShaderDescriptor } from '../shader';
 import { ShaderLibrary } from '../shader-library';
@@ -7,12 +8,11 @@ export class GpuShader implements Shader {
     private shaderModule: GPUShaderModule;
 
     public constructor(descriptor: ShaderDescriptor) {
-        this.shaderModule = getGpuContext()
-            .getDevice()
-            .createShaderModule({ code: ShaderLibrary.get(`gpu-${descriptor.name}`), label: descriptor.label });
+        const source = ShaderLibrary.get(`gpu-${descriptor.name}`);
+        this.shaderModule = getGpuContext().getDevice().createShaderModule({ code: source, label: descriptor.label });
         statistics.increment('api-calls', 1);
         if (DEVELOPMENT) {
-            this.logCompilationInfo();
+            this.checkCompilationInfo(descriptor.name, source);
         }
     }
 
@@ -20,16 +20,21 @@ export class GpuShader implements Shader {
         return this.shaderModule;
     }
 
-    private async logCompilationInfo(): Promise<void> {
-        if (DEVELOPMENT) {
-            const compilationInfo = await this.shaderModule.getCompilationInfo();
-            statistics.increment('api-calls', 1);
-            compilationInfo.messages.forEach((m) => console.log(m));
+    private async checkCompilationInfo(name: string, source: string): Promise<void> {
+        const compilationInfo = await this.shaderModule.getCompilationInfo();
+        statistics.increment('api-calls', 1);
+        if (compilationInfo.messages.length) {
+            this.throwError(name, source, compilationInfo.messages);
         }
     }
 
-    public getShaderModule(): GPUShaderModule {
-        return this.shaderModule;
+    private throwError(name: string, source: string, errors: ReadonlyArray<GPUCompilationMessage>): void {
+        let result = `Invalid shader '${name}'\n`;
+        for (const error of errors) {
+            result += error.message + `, line: ${error.lineNum}\n`;
+        }
+        result += numberSource(source);
+        throw new Error(result);
     }
 
     public release(): void {}

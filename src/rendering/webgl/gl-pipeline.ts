@@ -1,4 +1,5 @@
 import { Pipeline, PipelineDescriptor } from '../pipeline';
+import { Shader } from '../shader';
 
 export class GlPipeline implements Pipeline {
     private descriptor: PipelineDescriptor;
@@ -8,10 +9,10 @@ export class GlPipeline implements Pipeline {
     }
 
     public getId(): null {
-        return null
+        return null;
     }
 
-    public getDescriptor(): PipelineDescriptor {
-        return this.descriptor;
+    public getShader(): Shader {
+        return this.descriptor.shader;
     }
 }

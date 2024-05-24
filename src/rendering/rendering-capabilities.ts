@@ -2,7 +2,7 @@ export interface RenderingCapabilities {
     uniformBuffer: boolean;
     gpuTimer: boolean;
     instancedRendering: boolean;
-    isNdcCube: boolean;
+    ndcCube: boolean;
     debugGroups: boolean;
     instanceOffset: boolean;
     depthTexture: boolean;

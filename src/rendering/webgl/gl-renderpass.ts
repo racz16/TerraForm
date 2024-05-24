@@ -1,4 +1,5 @@
 import { vec2, vec3, vec4, mat2, mat3, mat4 } from 'gl-matrix';
+
 import { Command } from '../command';
 import { Pipeline } from '../pipeline';
 import {
@@ -59,7 +60,6 @@ export abstract class GlRenderpass implements Renderpass {
             statistics.increment('api-calls', 1);
             if (status !== context.FRAMEBUFFER_COMPLETE) {
                 const error = `FBO error status: ${this.fboStatusToString(status)}`;
-                console.error(error);
                 throw new Error(error);
             }
         }
@@ -134,42 +134,42 @@ export abstract class GlRenderpass implements Renderpass {
     public abstract setUniformBufferCommand(descriptor: SetIndexedUniformCommandDescriptor<Buffer>): void;
 
     public setUniformFloatCommand(descriptor: SetUniformCommandDescriptor<number>): void {
-        const shader = this.pipeline!.getDescriptor().shader;
+        const shader = this.pipeline!.getShader();
         this.commands.push(new GlSetUniformFloatCommand(descriptor, shader));
     }
 
     public setUniformVec2Command(descriptor: SetUniformCommandDescriptor<vec2>): void {
-        const shader = this.pipeline!.getDescriptor().shader;
+        const shader = this.pipeline!.getShader();
         this.commands.push(new GlSetUniformVec2Command(descriptor, shader));
     }
 
     public setUniformVec3Command(descriptor: SetUniformCommandDescriptor<vec3>): void {
-        const shader = this.pipeline!.getDescriptor().shader;
+        const shader = this.pipeline!.getShader();
         this.commands.push(new GlSetUniformVec3Command(descriptor, shader));
     }
 
     public setUniformVec4Command(descriptor: SetUniformCommandDescriptor<vec4>): void {
-        const shader = this.pipeline!.getDescriptor().shader;
+        const shader = this.pipeline!.getShader();
         this.commands.push(new GlSetUniformVec4Command(descriptor, shader));
     }
 
     public setUniformMat2Command(descriptor: SetUniformCommandDescriptor<mat2>): void {
-        const shader = this.pipeline!.getDescriptor().shader;
+        const shader = this.pipeline!.getShader();
         this.commands.push(new GlSetUniformMat2Command(descriptor, shader));
     }
 
     public setUniformMat3Command(descriptor: SetUniformCommandDescriptor<mat3>): void {
-        const shader = this.pipeline!.getDescriptor().shader;
+        const shader = this.pipeline!.getShader();
         this.commands.push(new GlSetUniformMat3Command(descriptor, shader));
     }
 
     public setUniformMat4Command(descriptor: SetUniformCommandDescriptor<mat4>): void {
-        const shader = this.pipeline!.getDescriptor().shader;
+        const shader = this.pipeline!.getShader();
         this.commands.push(new GlSetUniformMat4Command(descriptor, shader));
     }
 
     public setUniformTextureCommand(descriptor: SetIndexedUniformCommandDescriptor<Texture>): void {
-        const shader = this.pipeline!.getDescriptor().shader;
+        const shader = this.pipeline!.getShader();
         this.commands.push(new GlSetUniformTextureCommand(descriptor, shader));
     }
 
@@ -199,12 +199,15 @@ export abstract class GlRenderpass implements Renderpass {
         for (const command of this.commands) {
             command.execute();
         }
+        this.unbundVao();
         this.commands.length = 0;
         if (rendering.getCapabilities().gpuTimer) {
             this.query?.end();
             this.query?.update();
         }
     }
+
+    protected abstract unbundVao(): void;
 
     private configureFbo(): void {
         const context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();

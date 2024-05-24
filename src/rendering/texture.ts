@@ -16,7 +16,6 @@ export interface Texture2dDescriptor {
     format: TextureFormat;
     rendered?: boolean;
     sampled?: boolean;
-    data?: ArrayBufferView;
     label?: string;
 }
 

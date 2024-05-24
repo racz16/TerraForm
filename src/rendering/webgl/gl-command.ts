@@ -20,7 +20,7 @@ export class GlSetPipelneCommand implements Command {
 
     public execute(): void {
         const context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
-        context.useProgram(this.pipeline.getDescriptor().shader.getId());
+        context.useProgram(this.pipeline.getShader().getId());
         statistics.increment('api-calls', 1);
     }
 }

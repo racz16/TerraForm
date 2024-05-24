@@ -4,45 +4,27 @@ import { StatisticKey } from '../statistics';
 import { toStringRenderingApi } from '../rendering/rendering';
 
 export class StatisticsUi {
-    private statisticsElement: HTMLDivElement;
-    private renderingApiElement: HTMLDivElement;
-    private fpsFrameTimeElement: HTMLDivElement;
-    private cpuTimeElement: HTMLDivElement;
-    private gpuTimeElement: HTMLDivElement;
-    private apiCallsElement: HTMLDivElement;
-    private drawCallsElement: HTMLDivElement;
-    private bufferDataElement: HTMLDivElement;
-    private textureDataElement: HTMLDivElement;
-    private meshesElement: HTMLDivElement;
-    private cellsElement: HTMLDivElement;
-    private renderedCellsElement: HTMLDivElement;
-    private instancesElement: HTMLDivElement;
-    private renderedInstancesElement: HTMLDivElement;
-    private verticesElement: HTMLDivElement;
-    private renderedVerticesElement: HTMLDivElement;
-    private trianglesElement: HTMLDivElement;
-    private renderedTrianglesElement: HTMLDivElement;
+    private statisticsElement = getElement('#statistics');
+    private renderingApiElement = getElement('#rendering-api');
+    private fpsFrameTimeElement = getElement('#fps-frame-time');
+    private cpuTimeElement = getElement('#cpu-time');
+    private gpuTimeElement = getElement('#gpu-time');
+    private apiCallsElement = getElement('#api-calls');
+    private drawCallsElement = getElement('#draw-calls');
+    private bufferDataElement = getElement('#buffer-data');
+    private textureDataElement = getElement('#texture-data');
+    private meshesElement = getElement('#meshes');
+    private cellsElement = getElement('#cells');
+    private renderedCellsElement = getElement('#rendered-cells');
+    private instancesElement = getElement('#instances');
+    private renderedInstancesElement = getElement('#rendered-instances');
+    private verticesElement = getElement('#vertices');
+    private renderedVerticesElement = getElement('#rendered-vertices');
+    private trianglesElement = getElement('#triangles');
+    private renderedTrianglesElement = getElement('#rendered-triangles');
     private showingStatistics = false;
 
     public constructor() {
-        this.statisticsElement = getElement('#statistics');
-        this.renderingApiElement = getElement('#rendering-api');
-        this.fpsFrameTimeElement = getElement('#fps-frame-time');
-        this.cpuTimeElement = getElement('#cpu-time');
-        this.gpuTimeElement = getElement('#gpu-time');
-        this.apiCallsElement = getElement('#api-calls');
-        this.drawCallsElement = getElement('#draw-calls');
-        this.bufferDataElement = getElement('#buffer-data');
-        this.textureDataElement = getElement('#texture-data');
-        this.meshesElement = getElement('#meshes');
-        this.cellsElement = getElement('#cells');
-        this.renderedCellsElement = getElement('#rendered-cells');
-        this.instancesElement = getElement('#instances');
-        this.renderedInstancesElement = getElement('#rendered-instances');
-        this.verticesElement = getElement('#vertices');
-        this.renderedVerticesElement = getElement('#rendered-vertices');
-        this.trianglesElement = getElement('#triangles');
-        this.renderedTrianglesElement = getElement('#rendered-triangles');
         if (DEVELOPMENT) {
             console.log('Statistics UI initialized');
         }

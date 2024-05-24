@@ -1,4 +1,5 @@
 import { statisticsUi } from '.';
+import { millisecondsToSeconds } from './utility';
 
 export class Time {
     private static readonly ONE_SECOND = 1000;
@@ -67,7 +68,7 @@ export class Time {
     }
 
     public getTimeInSecs(): number {
-        return this.getTimeInMillisecs() / Time.ONE_SECOND;
+        return millisecondsToSeconds(this.getTimeInMillisecs());
     }
 
     public getFrameCount(): number {
