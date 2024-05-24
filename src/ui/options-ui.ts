@@ -50,12 +50,12 @@ export class OptionsUi {
     private handleDialogChange(opened: boolean): void {
         this.opened = opened;
         if (this.opened) {
-            this.dialog.style.left = `calc(100% - ${this.dialog.clientWidth}px)`;
+            this.dialog.style.display = 'block';
             if (DEVELOPMENT) {
                 console.log('Options UI opened');
             }
         } else {
-            this.dialog.style.left = '100%';
+            this.dialog.style.display = 'none';
             if (DEVELOPMENT) {
                 console.log('Options UI closed');
             }
