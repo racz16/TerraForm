@@ -13,10 +13,11 @@ import {
     SetVertexBufferCommandDescriptor,
 } from '../renderpass';
 import { Buffer } from '../buffer';
-import { getGl2Context } from '../rendering-context';
 import { statistics } from '../..';
 
 export class Gl2Renderpass extends GlRenderpass {
+    protected context!: WebGL2RenderingContext;
+
     public override setVertexBufferCommand(descriptor: SetVertexBufferCommandDescriptor): void {
         this.commands.push(new Gl2SetVertexBufferCommand(descriptor));
     }
@@ -33,8 +34,28 @@ export class Gl2Renderpass extends GlRenderpass {
         this.commands.push(new Gl2DrawInstancedIndexedCommand(descriptor));
     }
 
+    protected override fboStatusToString(status: GLenum): string {
+        switch (status) {
+            case this.context.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                return 'FRAMEBUFFER_INCOMPLETE_ATTACHMENT';
+            case this.context.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                return 'FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT';
+            case this.context.FRAMEBUFFER_UNSUPPORTED:
+                return 'FRAMEBUFFER_UNSUPPORTED';
+            case this.context.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+                return 'FRAMEBUFFER_INCOMPLETE_MULTISAMPLE';
+            default:
+                return 'UNKNOWN FRAMEBUFFER STATUS';
+        }
+    }
+
+    protected clearColor(index: number, color: number[]): void {
+        this.context.clearBufferfv(this.context.COLOR, index, color);
+        statistics.increment('api-calls', 1);
+    }
+
     protected override unbundVao(): void {
-        getGl2Context().getId().bindVertexArray(null);
+        this.context.bindVertexArray(null);
         statistics.increment('api-calls', 1);
     }
 }

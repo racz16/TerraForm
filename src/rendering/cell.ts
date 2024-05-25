@@ -2,13 +2,14 @@ import { mat4, quat, vec3, vec4 } from 'gl-matrix';
 
 import { Entity } from '../scene/entity';
 import { createBuffer, BufferUsage, Buffer } from './buffer';
-import { camera, options, rendering, statistics } from '..';
+import { camera, options, statistics } from '..';
 import { MAT4_ITEM_COUNT, SIZEOF_FLOAT, VEC3_ITEM_COUNT } from '../constants';
 import { addToVec3Pool } from '../utility';
 import { Renderpass } from './renderpass';
 import { Mesh } from './mesh';
 import { DrawConfig, createDrawConfig } from './draw-config';
 import { INSTANCE_BUFFER_INDEX, instanceLayout } from './layout';
+import { getRenderingCapabilities } from './rendering-context';
 
 export class Cell {
     private static M = mat4.create();
@@ -144,7 +145,7 @@ export class Cell {
         }
         statistics.increment('rendered-cells', 1);
         let offset = 0;
-        const instanceOffsetSupported = rendering.getCapabilities().instanceOffset;
+        const instanceOffsetSupported = getRenderingCapabilities().instanceOffset;
         if (instanceOffsetSupported) {
             renderpass.setVertexBufferCommand({
                 buffer: this.instanceBuffer,

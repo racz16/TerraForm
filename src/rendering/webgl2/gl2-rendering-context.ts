@@ -3,6 +3,14 @@ import { ApiError } from '../rendering-context';
 import { EXTDisjointTimerQueryWebGL2, GL2_GPU_TIME_EXTENSION } from '../webgl/gl-extensions';
 import { GlRenderingContext } from '../webgl/gl-rendering-context';
 
+export function getGl2ContextWrapper(): Gl2RenderingContext {
+    return rendering.getContext() as Gl2RenderingContext;
+}
+
+export function getGl2Context(): WebGL2RenderingContext {
+    return getGl2ContextWrapper().getId();
+}
+
 export class Gl2RenderingContext extends GlRenderingContext {
     protected context!: WebGL2RenderingContext;
     private gl2GpuTimeExtension: EXTDisjointTimerQueryWebGL2 | null = null;
@@ -30,14 +38,14 @@ export class Gl2RenderingContext extends GlRenderingContext {
             ) as GLint;
             statistics.increment('api-calls', 1);
         }
-        rendering.getCapabilities().uniformBuffer = true;
-        rendering.getCapabilities().gpuTimer = !!(this.gl2GpuTimeExtension && precision);
-        rendering.getCapabilities().instancedRendering = true;
-        rendering.getCapabilities().depthTexture = true;
-        rendering.getCapabilities().vertexArray = true;
+        this.capabilities.uniformBuffer = true;
+        this.capabilities.gpuTimer = !!(this.gl2GpuTimeExtension && precision);
+        this.capabilities.instancedRendering = true;
+        this.capabilities.depthTexture = true;
+        this.capabilities.vertexArray = true;
     }
 
-    protected override createContext(): WebGLRenderingContextBase {
+    protected override createContext(): WebGLRenderingContext | WebGL2RenderingContext {
         const context = this.getContext('webgl2');
         if (!context) {
             if (DEVELOPMENT) {

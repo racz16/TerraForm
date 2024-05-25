@@ -9,6 +9,10 @@ import {
 } from '../webgl/gl-extensions';
 import { GlRenderingContext } from '../webgl/gl-rendering-context';
 
+export function getGl1ContextWrapper(): Gl1RenderingContext {
+    return rendering.getContext() as Gl1RenderingContext;
+}
+
 export class Gl1RenderingContext extends GlRenderingContext {
     protected context!: WebGLRenderingContext;
     private gl1GpuTimeExtension: EXTDisjointTimerQuery | null = null;
@@ -38,14 +42,14 @@ export class Gl1RenderingContext extends GlRenderingContext {
             ) as GLint;
             statistics.increment('api-calls', 1);
         }
-        rendering.getCapabilities().uniformBuffer = false;
-        rendering.getCapabilities().gpuTimer = !!(this.gl1GpuTimeExtension && precision);
-        rendering.getCapabilities().instancedRendering = !!this.gl1InstancedRenderingExtension;
-        rendering.getCapabilities().depthTexture = !!this.gl1DepthTexture;
-        rendering.getCapabilities().vertexArray = !!this.gl1VertexArrayObject;
+        this.capabilities.uniformBuffer = false;
+        this.capabilities.gpuTimer = !!(this.gl1GpuTimeExtension && precision);
+        this.capabilities.instancedRendering = !!this.gl1InstancedRenderingExtension;
+        this.capabilities.depthTexture = !!this.gl1DepthTexture;
+        this.capabilities.vertexArray = !!this.gl1VertexArrayObject;
     }
 
-    protected override createContext(): WebGLRenderingContextBase {
+    protected override createContext(): WebGLRenderingContext {
         const context = this.getContext('webgl') || this.getContext('webgl-experimental');
         if (!context) {
             if (DEVELOPMENT) {

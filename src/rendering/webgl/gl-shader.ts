@@ -1,20 +1,18 @@
 import { Shader, ShaderDescriptor } from '../shader';
-import { isWebGL2 } from '../rendering';
 import { statistics } from '../..';
-import { getGl1Context, getGl2Context } from '../rendering-context';
 import { ShaderLibrary } from '../shader-library';
 import { VertexBufferLayout } from '../pipeline';
 import { numberSource } from '../../utility';
+import { getGlContext } from './gl-rendering-context';
 
 export abstract class GlShader implements Shader {
+    protected context = getGlContext();
     protected program: WebGLProgram;
     private uniformLocations = new Map<string, WebGLUniformLocation>();
-    private context: WebGLRenderingContext | WebGL2RenderingContext;
     private name: string;
     private valid = true;
 
     public constructor(descriptor: ShaderDescriptor) {
-        this.context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
         this.name = descriptor.name;
         const vertexShader = this.getShader(this.context.VERTEX_SHADER, this.getVertexShaderSource());
         const fragmentShader = this.getShader(this.context.FRAGMENT_SHADER, this.getFragmentShaderSource());

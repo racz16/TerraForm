@@ -1,18 +1,17 @@
 import { statistics } from '../..';
-import { getGl2Context } from '../rendering-context';
 import { TimeQueryDescriptor } from '../time-query';
 import { EXTDisjointTimerQueryWebGL2 } from '../webgl/gl-extensions';
 import { GlTimeQuery } from '../webgl/gl-time-query';
+import { getGl2ContextWrapper } from './gl2-rendering-context';
 
 export class Gl2TimeQuery extends GlTimeQuery {
     private query: WebGLQuery;
-    private context: WebGL2RenderingContext;
+    protected context!: WebGL2RenderingContext;
     private gpuTimeExtension: EXTDisjointTimerQueryWebGL2;
 
     public constructor(descriptor: TimeQueryDescriptor) {
         super(descriptor);
-        this.context = getGl2Context().getId();
-        this.gpuTimeExtension = getGl2Context().getGpuTimeExtension()!;
+        this.gpuTimeExtension = getGl2ContextWrapper().getGpuTimeExtension()!;
         this.query = this.context.createQuery()!;
         statistics.increment('api-calls', 1);
     }

@@ -1,21 +1,20 @@
 import { statistics } from '../..';
 import { DrawConfig, DrawConfigDescriptor } from '../draw-config';
 import { Mesh, VertexBufferDescriptor } from '../mesh';
-import { getGl2Context } from '../rendering-context';
+import { getGl2Context, getGl2ContextWrapper } from './gl2-rendering-context';
 
 export class Gl2DrawConfig implements DrawConfig {
-    private context: WebGL2RenderingContext;
+    protected context = getGl2Context();
     private descriptor: DrawConfigDescriptor;
     private vao: WebGLVertexArrayObject | null;
     private valid = true;
 
     public constructor(descriptor: DrawConfigDescriptor) {
         this.descriptor = descriptor;
-        this.context = getGl2Context().getId();
         this.vao = this.context.createVertexArray();
         this.context.bindVertexArray(this.vao);
         const mesh = descriptor.mesh;
-        getGl2Context().configDraw(mesh.vertexBufferDescriptor, mesh.indexBufferDescriptor.buffer, descriptor.instanceData);
+        getGl2ContextWrapper().configDraw(mesh.vertexBufferDescriptor, mesh.indexBufferDescriptor.buffer, descriptor.instanceData);
         this.context.bindVertexArray(null);
         statistics.increment('api-calls', 3);
     }

@@ -30,10 +30,12 @@ import { GlTimeQuery } from './gl-time-query';
 import { rendering, statistics } from '../..';
 import { Texture } from '../texture';
 import { Buffer } from '../buffer';
-import { isWebGL2, isWebGL1 } from '../rendering';
-import { getGl2Context, getGl1Context } from '../rendering-context';
+import { getGlContext, getGlContextWrapper } from './gl-rendering-context';
+import { getRenderingCapabilities } from '../rendering-context';
 
 export abstract class GlRenderpass implements Renderpass {
+    protected context = getGlContext();
+    protected contextWrapper = getGlContextWrapper();
     protected commands: Command[] = [];
     protected descriptor: RenderpassDescriptor;
     private query?: GlTimeQuery;
@@ -49,29 +51,28 @@ export abstract class GlRenderpass implements Renderpass {
     }
 
     private createFbo(descriptor: OffscreenRenderpassDescriptor): void {
-        const context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
-        this.fbo = context.createFramebuffer();
-        context.bindFramebuffer(context.FRAMEBUFFER, this.fbo);
+        this.fbo = this.context.createFramebuffer();
+        this.context.bindFramebuffer(this.context.FRAMEBUFFER, this.fbo);
         statistics.increment('api-calls', 2);
-        this.addColorAttachments(context, descriptor);
-        this.addDepthAttachment(context);
+        this.addColorAttachments(descriptor);
+        this.addDepthAttachment();
         if (DEVELOPMENT) {
-            const status = context.checkFramebufferStatus(context.FRAMEBUFFER);
+            const status = this.context.checkFramebufferStatus(this.context.FRAMEBUFFER);
             statistics.increment('api-calls', 1);
-            if (status !== context.FRAMEBUFFER_COMPLETE) {
+            if (status !== this.context.FRAMEBUFFER_COMPLETE) {
                 const error = `FBO error status: ${this.fboStatusToString(status)}`;
                 throw new Error(error);
             }
         }
     }
 
-    private addColorAttachments(context: WebGLRenderingContext, descriptor: OffscreenRenderpassDescriptor): void {
+    private addColorAttachments(descriptor: OffscreenRenderpassDescriptor): void {
         for (let i = 0; i < descriptor.colorAttachments.length; i++) {
             const colorAttachment = descriptor.colorAttachments[i];
-            context.framebufferTexture2D(
-                context.FRAMEBUFFER,
-                context.COLOR_ATTACHMENT0 + i,
-                context.TEXTURE_2D,
+            this.context.framebufferTexture2D(
+                this.context.FRAMEBUFFER,
+                this.context.COLOR_ATTACHMENT0 + i,
+                this.context.TEXTURE_2D,
                 colorAttachment.texture.getId(),
                 0
             );
@@ -79,12 +80,12 @@ export abstract class GlRenderpass implements Renderpass {
         statistics.increment('api-calls', descriptor.colorAttachments.length);
     }
 
-    private addDepthAttachment(context: WebGLRenderingContext): void {
+    private addDepthAttachment(): void {
         if (this.descriptor.depthStencilAttachment) {
-            context.framebufferTexture2D(
-                context.FRAMEBUFFER,
-                context.DEPTH_ATTACHMENT,
-                context.TEXTURE_2D,
+            this.context.framebufferTexture2D(
+                this.context.FRAMEBUFFER,
+                this.context.DEPTH_ATTACHMENT,
+                this.context.TEXTURE_2D,
                 this.descriptor.depthStencilAttachment.texture.getId(),
                 0
             );
@@ -92,31 +93,7 @@ export abstract class GlRenderpass implements Renderpass {
         }
     }
 
-    private fboStatusToString(status: GLenum): string {
-        if (isWebGL1()) {
-            const context = getGl1Context().getId();
-            return this.gl1FboStatusToString(context, status);
-        } else {
-            const context = getGl2Context().getId();
-            if (status === context.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE) {
-                return 'FRAMEBUFFER_INCOMPLETE_MULTISAMPLE';
-            }
-            return this.gl1FboStatusToString(context, status);
-        }
-    }
-
-    private gl1FboStatusToString(context: WebGLRenderingContext, status: GLenum): string {
-        switch (status) {
-            case context.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-                return 'FRAMEBUFFER_INCOMPLETE_ATTACHMENT';
-            case context.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-                return 'FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT';
-            case context.FRAMEBUFFER_UNSUPPORTED:
-                return 'FRAMEBUFFER_UNSUPPORTED';
-            default:
-                return 'UNKNOWN FRAMEBUFFER STATUS';
-        }
-    }
+    protected abstract fboStatusToString(status: GLenum): string;
 
     public setPipelineCommand(pipeline: Pipeline): void {
         this.pipeline = pipeline;
@@ -193,7 +170,7 @@ export abstract class GlRenderpass implements Renderpass {
 
     public execute(): void {
         this.configureFbo();
-        if (rendering.getCapabilities().gpuTimer) {
+        if (getRenderingCapabilities().gpuTimer) {
             this.query?.begin();
         }
         for (const command of this.commands) {
@@ -201,7 +178,7 @@ export abstract class GlRenderpass implements Renderpass {
         }
         this.unbundVao();
         this.commands.length = 0;
-        if (rendering.getCapabilities().gpuTimer) {
+        if (getRenderingCapabilities().gpuTimer) {
             this.query?.end();
             this.query?.update();
         }
@@ -210,56 +187,48 @@ export abstract class GlRenderpass implements Renderpass {
     protected abstract unbundVao(): void;
 
     private configureFbo(): void {
-        const context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
         const canvas = rendering.getCanvas();
-        context.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
+        this.context.viewport(0, 0, canvas.clientWidth, canvas.clientHeight);
         if (this.descriptor.depthStencilAttachment) {
-            context.enable(context.DEPTH_TEST);
+            this.context.enable(this.context.DEPTH_TEST);
         } else {
-            context.disable(context.DEPTH_TEST);
+            this.context.disable(this.context.DEPTH_TEST);
         }
         statistics.increment('api-calls', 2);
         if (this.descriptor.type === 'canvas') {
-            context.bindFramebuffer(context.FRAMEBUFFER, null);
+            this.context.bindFramebuffer(this.context.FRAMEBUFFER, null);
             statistics.increment('api-calls', 1);
         } else {
-            context.bindFramebuffer(context.FRAMEBUFFER, this.fbo);
+            this.context.bindFramebuffer(this.context.FRAMEBUFFER, this.fbo);
             statistics.increment('api-calls', 1);
-            this.configureColorAttachments(context, this.descriptor);
-            this.configureDepthAttachment(context);
+            this.configureColorAttachments(this.descriptor);
+            this.configureDepthAttachment();
         }
     }
 
-    private configureColorAttachments(context: WebGLRenderingContext, descriptor: OffscreenRenderpassDescriptor): void {
+    private configureColorAttachments(descriptor: OffscreenRenderpassDescriptor): void {
         for (let i = 0; i < descriptor.colorAttachments.length; i++) {
             const colorAttachment = descriptor.colorAttachments[i];
             if (colorAttachment.clearColor) {
                 const color = colorAttachment.clearColor;
-                if (isWebGL1()) {
-                    context.clearColor(color[0], color[1], color[2], color[3]);
-                    context.clear(context.COLOR_BUFFER_BIT);
-                    statistics.increment('api-calls', 2);
-                } else {
-                    const gl2 = getGl2Context().getId();
-                    gl2.clearBufferfv(gl2.COLOR, i, color);
-                    statistics.increment('api-calls', 1);
-                }
+                this.clearColor(i, color);
             }
         }
     }
 
-    private configureDepthAttachment(context: WebGLRenderingContext): void {
+    protected abstract clearColor(index: number, color: number[]): void;
+
+    private configureDepthAttachment(): void {
         if (this.descriptor.depthStencilAttachment?.clearValue) {
-            context.clearDepth(this.descriptor.depthStencilAttachment.clearValue);
-            context.clear(context.DEPTH_BUFFER_BIT);
+            this.context.clearDepth(this.descriptor.depthStencilAttachment.clearValue);
+            this.context.clear(this.context.DEPTH_BUFFER_BIT);
             statistics.increment('api-calls', 2);
         }
     }
 
     public release(): void {
         if (this.fbo) {
-            const context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
-            context.deleteFramebuffer(this.fbo);
+            this.context.deleteFramebuffer(this.fbo);
             statistics.increment('api-calls', 1);
             this.fbo = null;
         }

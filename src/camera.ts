@@ -2,6 +2,7 @@ import { ReadonlyVec3, glMatrix, mat4, quat, vec3 } from 'gl-matrix';
 
 import { options, rendering } from '.';
 import { fovYToFovX } from './utility';
+import { getRenderingCapabilities } from './rendering/rendering-context';
 
 export class Camera {
     private static maxFrustumDistance = 0;
@@ -91,7 +92,7 @@ export class Camera {
         const canvas = rendering.getCanvas();
         const aspectRatio = canvas.clientWidth / canvas.clientHeight;
         const farPlane = options.getViewDistance();
-        if (rendering.getCapabilities().ndcCube) {
+        if (getRenderingCapabilities().ndcCube) {
             mat4.perspectiveNO(this.P, fovY, aspectRatio, 0.5, farPlane);
         } else {
             mat4.perspectiveZO(this.P, fovY, aspectRatio, 0.5, farPlane);

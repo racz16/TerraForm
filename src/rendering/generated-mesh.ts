@@ -1,13 +1,14 @@
 import { rendering } from '..';
 import { SIZEOF_FLOAT, SIZEOF_SHORT, VEC2_ITEM_COUNT, VEC3_ITEM_COUNT } from '../constants';
 import { BufferUsage, createBuffer } from './buffer';
+import { getRenderingCapabilities } from './rendering-context';
 
 const SIDE_VERTEX_COUNT = 4;
 const SIDE_TRIANGLE_COUNT = 2;
 const TRIANGLE_VERTEX_COUNT = 3;
 
 export function addQuadMesh(): void {
-    const uvUp = rendering.getCapabilities().uvUp;
+    const uvUp = getRenderingCapabilities().uvUp;
     const top = uvUp ? 1 : 0;
     const bottom = uvUp ? 0 : 1;
     const vertexBuffer = createBuffer({

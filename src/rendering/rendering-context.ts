@@ -1,11 +1,13 @@
 import { rendering } from '..';
 import { isWebGL1, isWebGL2 } from './rendering';
+import { RenderingCapabilities } from './rendering-capabilities';
 import { Gl1RenderingContext } from './webgl1/gl1-rendering-context';
 import { Gl2RenderingContext } from './webgl2/gl2-rendering-context';
 import { GpuRenderingContext } from './webgpu/gpu-rendering-context';
 
 export interface RenderingContext {
     getId(): any;
+    getCapabilities(): RenderingCapabilities;
     stop(): Promise<void>;
     release(): void;
 }
@@ -28,14 +30,6 @@ export async function createRenderingContext(): Promise<RenderingContext> {
     }
 }
 
-export function getGl1Context(): Gl1RenderingContext {
-    return rendering.getContext() as Gl1RenderingContext;
-}
-
-export function getGl2Context(): Gl2RenderingContext {
-    return rendering.getContext() as Gl2RenderingContext;
-}
-
-export function getGpuContext(): GpuRenderingContext {
-    return rendering.getContext() as GpuRenderingContext;
+export function getRenderingCapabilities(): RenderingCapabilities {
+    return rendering.getContext().getCapabilities();
 }

@@ -6,10 +6,10 @@ import {
     SetDrawConfigCommandDescriptor,
     SetVertexBufferCommandDescriptor,
 } from '../renderpass';
-import { getGl2Context } from '../rendering-context';
 import { Shader } from '../shader';
 import { Gl2Shader } from './gl2-shader';
 import { Buffer } from '../buffer';
+import { getGl2ContextWrapper, getGl2Context } from './gl2-rendering-context';
 
 export class Gl2SetVertexBufferCommand implements Command {
     private descriptor: SetVertexBufferCommandDescriptor;
@@ -19,7 +19,7 @@ export class Gl2SetVertexBufferCommand implements Command {
     }
 
     public execute(): void {
-        getGl2Context().configVbo(this.descriptor);
+        getGl2ContextWrapper().configVbo(this.descriptor);
     }
 }
 
@@ -32,13 +32,13 @@ export class Gl2SetDrawConfigCommand implements Command {
 
     public execute(): void {
         const drawConfig = this.descriptor.drawConfig;
-        const context = getGl2Context().getId();
-        context.bindVertexArray(drawConfig.getId());
+        getGl2Context().bindVertexArray(drawConfig.getId());
         statistics.increment('api-calls', 1);
     }
 }
 
 export class Gl2SetUniformBufferCommand implements Command {
+    protected context = getGl2Context();
     private descriptor: SetIndexedUniformCommandDescriptor<Buffer>;
     private shader: Shader;
 
@@ -48,17 +48,17 @@ export class Gl2SetUniformBufferCommand implements Command {
     }
 
     public execute(): void {
-        const context = getGl2Context().getId();
         const uniformBuffer = this.descriptor.value;
         const shader = this.shader as Gl2Shader;
         const index = shader.getUniformBlockIndex(this.descriptor.name);
-        context.uniformBlockBinding(shader.getId(), index, this.descriptor.index);
-        context.bindBufferBase(context.UNIFORM_BUFFER, this.descriptor.index, uniformBuffer.getId());
+        this.context.uniformBlockBinding(shader.getId(), index, this.descriptor.index);
+        this.context.bindBufferBase(this.context.UNIFORM_BUFFER, this.descriptor.index, uniformBuffer.getId());
         statistics.increment('api-calls', 2);
     }
 }
 
 export class Gl2DrawInstancedIndexedCommand implements Command {
+    protected context = getGl2Context();
     private descriptor: DrawInstancedIndexedCommandDescriptor;
 
     public constructor(descriptor: DrawInstancedIndexedCommandDescriptor) {
@@ -71,11 +71,10 @@ export class Gl2DrawInstancedIndexedCommand implements Command {
     }
 
     public execute(): void {
-        const context = getGl2Context().getId();
-        context.drawElementsInstanced(
-            context.TRIANGLES,
+        this.context.drawElementsInstanced(
+            this.context.TRIANGLES,
             this.descriptor.indexCount,
-            context.UNSIGNED_SHORT,
+            this.context.UNSIGNED_SHORT,
             0,
             this.descriptor.instanceCount
         );

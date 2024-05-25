@@ -1,8 +1,8 @@
 import { statistics } from '../..';
-import { getGl1Context } from '../rendering-context';
 import { TimeQueryDescriptor } from '../time-query';
 import { EXTDisjointTimerQuery } from '../webgl/gl-extensions';
 import { GlTimeQuery } from '../webgl/gl-time-query';
+import { getGl1ContextWrapper } from './gl1-rendering-context';
 
 export class Gl1TimeQuery extends GlTimeQuery {
     private query: WebGLQuery;
@@ -10,7 +10,7 @@ export class Gl1TimeQuery extends GlTimeQuery {
 
     public constructor(descriptor: TimeQueryDescriptor) {
         super(descriptor);
-        this.gpuTimeExtension = getGl1Context().getGpuTimeExtension()!;
+        this.gpuTimeExtension = getGl1ContextWrapper().getGpuTimeExtension()!;
         this.query = this.gpuTimeExtension.createQueryEXT()!;
         statistics.increment('api-calls', 1);
     }
@@ -29,7 +29,7 @@ export class Gl1TimeQuery extends GlTimeQuery {
     public override end(): void {
         if (!this.inProgress) {
             this.gpuTimeExtension.endQueryEXT(this.gpuTimeExtension.TIME_ELAPSED_EXT);
-            getGl1Context().getId().flush();
+            this.context.flush();
             statistics.increment('api-calls', 2);
             this.inProgress = true;
         }
@@ -42,7 +42,7 @@ export class Gl1TimeQuery extends GlTimeQuery {
 
     protected isResultValid(): boolean {
         statistics.increment('api-calls', 1);
-        return !getGl1Context().getId().getParameter(this.gpuTimeExtension.GPU_DISJOINT_EXT);
+        return !this.context.getParameter(this.gpuTimeExtension.GPU_DISJOINT_EXT);
     }
 
     protected override getResult(): number {

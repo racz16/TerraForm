@@ -1,9 +1,10 @@
 import { statistics } from '../..';
 import { mathTypeToTypedArray } from '../../utility';
 import { Buffer, BufferUsage, BufferDescriptor, BufferDataDescriptor } from '../buffer';
-import { getGpuContext } from '../rendering-context';
+import { getGpuDevice } from './gpu-rendering-context';
 
 export class GpuBuffer implements Buffer {
+    protected device = getGpuDevice();
     private buffer: GPUBuffer;
     private bindGroup: GPUBindGroup | null = null;
     private size: number;
@@ -34,7 +35,7 @@ export class GpuBuffer implements Buffer {
             mappedAtCreation: descriptor.type === 'data-callback',
         };
         statistics.increment('api-calls', 1);
-        return getGpuContext().getDevice().createBuffer(nativeDescriptor);
+        return this.device.createBuffer(nativeDescriptor);
     }
 
     private initializeBufferData(descriptor: BufferDescriptor): void {
@@ -55,12 +56,10 @@ export class GpuBuffer implements Buffer {
 
     public getBindGroup(pipeline: GPURenderPipeline, index: number): GPUBindGroup {
         if (!this.bindGroup) {
-            this.bindGroup = getGpuContext()
-                .getDevice()
-                .createBindGroup({
-                    layout: pipeline.getBindGroupLayout(index),
-                    entries: [{ binding: 0, resource: { buffer: this.buffer } }],
-                });
+            this.bindGroup = this.device.createBindGroup({
+                layout: pipeline.getBindGroupLayout(index),
+                entries: [{ binding: 0, resource: { buffer: this.buffer } }],
+            });
             statistics.increment('api-calls', 2);
         }
         return this.bindGroup;
@@ -96,9 +95,7 @@ export class GpuBuffer implements Buffer {
         if (data.type === 'math') {
             this.setData({ type: 'buffer', data: mathTypeToTypedArray(data.data), offset: data.offset });
         } else {
-            getGpuContext()
-                .getDevice()
-                .queue.writeBuffer(this.buffer, data.offset ?? 0, data.data, data.dataOffset, data.dataLength);
+            this.device.queue.writeBuffer(this.buffer, data.offset ?? 0, data.data, data.dataOffset, data.dataLength);
             statistics.increment('api-calls', 1);
         }
     }

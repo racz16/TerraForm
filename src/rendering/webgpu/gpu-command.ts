@@ -12,7 +12,7 @@ import { GpuRenderpass } from './gpu-renderpass';
 import { Texture } from '../texture';
 import { GpuTexture } from './gpu-texture';
 import { Buffer } from '../buffer';
-import { getGpuContext } from '../rendering-context';
+import { getGpuContextWrapper } from './gpu-rendering-context';
 
 export class GpuSetPipelneCommand implements Command {
     private pipeline: Pipeline;
@@ -39,7 +39,7 @@ export class GpuSetVertexBufferCommand implements Command {
     }
 
     public execute(): void {
-        getGpuContext().configVertexBuffer(this.renderpass, this.descriptor);
+        getGpuContextWrapper().configVertexBuffer(this.renderpass, this.descriptor);
     }
 }
 
@@ -53,11 +53,12 @@ export class GpuSetIndexBufferCommand implements Command {
     }
 
     public execute(): void {
-        getGpuContext().configIndexBuffer(this.renderpass, this.indexBuffer);
+        getGpuContextWrapper().configIndexBuffer(this.renderpass, this.indexBuffer);
     }
 }
 
 export class GpuSetDrawConfigCommand implements Command {
+    protected contextWrapper = getGpuContextWrapper();
     private descriptor: SetDrawConfigCommandDescriptor;
     private renderpass: GpuRenderpass;
 
@@ -68,8 +69,8 @@ export class GpuSetDrawConfigCommand implements Command {
 
     public execute(): void {
         const mesh = this.descriptor.drawConfig.getMesh();
-        getGpuContext().configVertexBuffer(this.renderpass, mesh.vertexBufferDescriptor);
-        getGpuContext().configIndexBuffer(this.renderpass, mesh.indexBufferDescriptor.buffer);
+        this.contextWrapper.configVertexBuffer(this.renderpass, mesh.vertexBufferDescriptor);
+        this.contextWrapper.configIndexBuffer(this.renderpass, mesh.indexBufferDescriptor.buffer);
     }
 }
 

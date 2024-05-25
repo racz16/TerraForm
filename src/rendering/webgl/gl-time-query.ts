@@ -1,7 +1,9 @@
 import { nanoSecondsToMilliseconds } from '../../utility';
 import { TimeQuery, TimeQueryDescriptor, TimeQueryHandler } from '../time-query';
+import { getGlContext } from './gl-rendering-context';
 
 export abstract class GlTimeQuery implements TimeQuery {
+    protected context = getGlContext();
     protected inProgress = false;
     protected handler: TimeQueryHandler;
     protected valid = true;

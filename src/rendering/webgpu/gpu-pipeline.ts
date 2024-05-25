@@ -1,7 +1,7 @@
 import { statistics } from '../..';
 import { Pipeline, PipelineDescriptor, VertexAttributeFormat } from '../pipeline';
-import { getGpuContext } from '../rendering-context';
 import { Shader } from '../shader';
+import { getGpuContextWrapper, getGpuDevice } from './gpu-rendering-context';
 
 export class GpuPipeline implements Pipeline {
     private pipeline!: GPURenderPipeline;
@@ -28,7 +28,7 @@ export class GpuPipeline implements Pipeline {
             fragment: {
                 module: this.descriptor.shader.getId(),
                 targets: this.descriptor.attachmentFormats.map((af) => ({
-                    format: af === 'canvas' ? getGpuContext().getCanvasFormat() : 'rgba8unorm',
+                    format: af === 'canvas' ? getGpuContextWrapper().getCanvasFormat() : 'rgba8unorm',
                 })),
             },
             primitive: {
@@ -44,7 +44,7 @@ export class GpuPipeline implements Pipeline {
                 depthCompare: 'less',
             };
         }
-        this.pipeline = await getGpuContext().getDevice().createRenderPipelineAsync(pipelineDescriptor);
+        this.pipeline = await getGpuDevice().createRenderPipelineAsync(pipelineDescriptor);
         statistics.increment('api-calls', 1);
     }
 

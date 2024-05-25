@@ -7,9 +7,6 @@ export const GL1_VERTEX_ARRAY_OBJECT = 'OES_vertex_array_object';
 
 export interface WebGLRenderingContextBase {
     getExtension(extensionName: typeof GL1_GPU_TIME_EXTENSION): EXTDisjointTimerQuery | null;
-}
-
-export interface WebGLRenderingContextBase {
     getExtension(extensionName: typeof GL2_GPU_TIME_EXTENSION): EXTDisjointTimerQueryWebGL2 | null;
 }
 

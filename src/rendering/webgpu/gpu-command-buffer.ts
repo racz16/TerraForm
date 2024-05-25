@@ -1,10 +1,12 @@
 import { CommandBuffer } from '../command-buffer';
-import { rendering, statistics } from '../..';
-import { getGpuContext } from '../rendering-context';
+import { statistics } from '../..';
 import { Renderpass, RenderpassDescriptor } from '../renderpass';
 import { GpuRenderpass } from './gpu-renderpass';
+import { getGpuDevice } from './gpu-rendering-context';
+import { getRenderingCapabilities } from '../rendering-context';
 
 export class GpuCommandBuffer implements CommandBuffer {
+    protected device = getGpuDevice();
     private commandEncoder!: GPUCommandEncoder;
     private renderpasses: GpuRenderpass[] = [];
     private label?: string;
@@ -24,16 +26,14 @@ export class GpuCommandBuffer implements CommandBuffer {
     }
 
     public execute(): void {
-        this.commandEncoder = getGpuContext()
-            .getDevice()
-            .createCommandEncoder({ label: `${this.label} command encoder` });
+        this.commandEncoder = this.device.createCommandEncoder({ label: `${this.label} command encoder` });
         for (const renderpass of this.renderpasses) {
             renderpass.execute();
         }
         const commandBuffer = this.commandEncoder.finish({ label: this.label });
-        getGpuContext().getDevice().queue.submit([commandBuffer]);
+        this.device.queue.submit([commandBuffer]);
         statistics.increment('api-calls', 3);
-        if (rendering.getCapabilities().gpuTimer) {
+        if (getRenderingCapabilities().gpuTimer) {
             for (const renderpass of this.renderpasses) {
                 renderpass.updateQuery();
             }

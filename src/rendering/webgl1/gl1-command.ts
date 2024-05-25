@@ -1,7 +1,9 @@
-import { rendering, statistics } from '../..';
+import { statistics } from '../..';
 import { Command } from '../command';
-import { getGl1Context } from '../rendering-context';
+import { getRenderingCapabilities } from '../rendering-context';
 import { DrawInstancedIndexedCommandDescriptor, SetDrawConfigCommandDescriptor, SetVertexBufferCommandDescriptor } from '../renderpass';
+import { getGlContext } from '../webgl/gl-rendering-context';
+import { getGl1ContextWrapper } from './gl1-rendering-context';
 
 export class Gl1SetVertexBufferCommand implements Command {
     private descriptor: SetVertexBufferCommandDescriptor;
@@ -11,11 +13,12 @@ export class Gl1SetVertexBufferCommand implements Command {
     }
 
     public execute(): void {
-        getGl1Context().configVbo(this.descriptor);
+        getGl1ContextWrapper().configVbo(this.descriptor);
     }
 }
 
 export class Gl1SetDrawConfigCommand implements Command {
+    protected contextWrapper = getGl1ContextWrapper();
     private descriptor: SetDrawConfigCommandDescriptor;
 
     public constructor(descriptor: SetDrawConfigCommandDescriptor) {
@@ -23,13 +26,13 @@ export class Gl1SetDrawConfigCommand implements Command {
     }
 
     public execute(): void {
-        if (rendering.getCapabilities().vertexArray) {
+        if (getRenderingCapabilities().vertexArray) {
             const drawConfig = this.descriptor.drawConfig;
-            getGl1Context().getVertexArrayObjectExtension()?.bindVertexArrayOES(drawConfig.getId());
+            this.contextWrapper.getVertexArrayObjectExtension()?.bindVertexArrayOES(drawConfig.getId());
             statistics.increment('api-calls', 1);
         } else {
             const mesh = this.descriptor.drawConfig.getMesh();
-            getGl1Context().configDraw(
+            this.contextWrapper.configDraw(
                 mesh.vertexBufferDescriptor,
                 mesh.indexBufferDescriptor.buffer,
                 this.descriptor.drawConfig.getInstanceData()
@@ -39,6 +42,7 @@ export class Gl1SetDrawConfigCommand implements Command {
 }
 
 export class Gl1DrawInstancedIndexedCommand implements Command {
+    protected context = getGlContext();
     private descriptor: DrawInstancedIndexedCommandDescriptor;
 
     public constructor(descriptor: DrawInstancedIndexedCommandDescriptor) {
@@ -51,13 +55,12 @@ export class Gl1DrawInstancedIndexedCommand implements Command {
     }
 
     public execute(): void {
-        const context = getGl1Context().getId();
-        getGl1Context()
+        getGl1ContextWrapper()
             .getInstancedRenderingExtension()!
             .drawElementsInstancedANGLE(
-                context.TRIANGLES,
+                this.context.TRIANGLES,
                 this.descriptor.indexCount,
-                context.UNSIGNED_SHORT,
+                this.context.UNSIGNED_SHORT,
                 0,
                 this.descriptor.instanceCount
             );

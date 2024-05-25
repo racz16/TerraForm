@@ -1,8 +1,9 @@
 import { statistics } from '../..';
-import { getGpuContext } from '../rendering-context';
 import { Texture, Texture2dDescriptor } from '../texture';
+import { getGpuDevice } from './gpu-rendering-context';
 
 export class GpuTexture implements Texture {
+    protected device = getGpuDevice();
     private id: GPUTexture;
     private sampler: GPUSampler;
     private view?: GPUTextureView;
@@ -11,16 +12,14 @@ export class GpuTexture implements Texture {
     private valid = true;
 
     public constructor(descriptor: Texture2dDescriptor) {
-        this.id = getGpuContext()
-            .getDevice()
-            .createTexture({
-                dimension: '2d',
-                format: this.getFormat(descriptor),
-                usage: this.getUsage(descriptor),
-                size: { width: descriptor.width, height: descriptor.height },
-                label: descriptor.label,
-            });
-        this.sampler = getGpuContext().getDevice().createSampler({
+        this.id = this.device.createTexture({
+            dimension: '2d',
+            format: this.getFormat(descriptor),
+            usage: this.getUsage(descriptor),
+            size: { width: descriptor.width, height: descriptor.height },
+            label: descriptor.label,
+        });
+        this.sampler = this.device.createSampler({
             label: descriptor.label,
             minFilter: 'nearest',
             magFilter: 'nearest',
@@ -55,15 +54,13 @@ export class GpuTexture implements Texture {
 
     public getBindGroup(pipeline: GPURenderPipeline, index: number): GPUBindGroup {
         if (!this.bindGroup) {
-            this.bindGroup = getGpuContext()
-                .getDevice()
-                .createBindGroup({
-                    layout: pipeline.getBindGroupLayout(index),
-                    entries: [
-                        { binding: 0, resource: this.sampler },
-                        { binding: 1, resource: this.getView() },
-                    ],
-                });
+            this.bindGroup = this.device.createBindGroup({
+                layout: pipeline.getBindGroupLayout(index),
+                entries: [
+                    { binding: 0, resource: this.sampler },
+                    { binding: 1, resource: this.getView() },
+                ],
+            });
             statistics.increment('api-calls', 1);
         }
         return this.bindGroup;

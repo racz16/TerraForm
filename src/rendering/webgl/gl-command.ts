@@ -1,17 +1,17 @@
 import { mat2, mat3, mat4, vec2, vec3, vec4 } from 'gl-matrix';
 
 import { Command } from '../command';
-import { isWebGL2 } from '../rendering';
 import { GlBuffer } from './gl-buffer';
 import { Pipeline } from '../pipeline';
 import { statistics } from '../..';
 import { GlShader } from './gl-shader';
-import { getGl1Context, getGl2Context } from '../rendering-context';
 import { SetIndexedUniformCommandDescriptor, SetUniformCommandDescriptor } from '../renderpass';
 import { Texture } from '../texture';
 import { Shader } from '../shader';
+import { getGlContext, getGlContextWrapper } from './gl-rendering-context';
 
 export class GlSetPipelneCommand implements Command {
+    protected context = getGlContext();
     private pipeline: Pipeline;
 
     public constructor(pipeline: Pipeline) {
@@ -19,13 +19,13 @@ export class GlSetPipelneCommand implements Command {
     }
 
     public execute(): void {
-        const context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
-        context.useProgram(this.pipeline.getShader().getId());
+        this.context.useProgram(this.pipeline.getShader().getId());
         statistics.increment('api-calls', 1);
     }
 }
 
 export class GlSetIndexBufferCommand implements Command {
+    protected contextWrapper = getGlContextWrapper();
     private indexBuffer: GlBuffer;
 
     public constructor(indexBuffer: GlBuffer) {
@@ -33,12 +33,12 @@ export class GlSetIndexBufferCommand implements Command {
     }
 
     public execute(): void {
-        const context = isWebGL2() ? getGl2Context() : getGl1Context();
-        context.configEbo(this.indexBuffer);
+        this.contextWrapper.configEbo(this.indexBuffer);
     }
 }
 
 abstract class GlSetUniformCommand<T> implements Command {
+    protected context = getGlContext();
     protected descriptor: SetUniformCommandDescriptor<T>;
     private shader: GlShader;
 
@@ -48,59 +48,58 @@ abstract class GlSetUniformCommand<T> implements Command {
     }
 
     public execute(): void {
-        const context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
         const location = this.shader.getUniformLocation(this.descriptor.name);
-        this.setUniform(context, location);
+        this.setUniform(location);
     }
 
-    protected abstract setUniform(context: WebGL2RenderingContext | WebGLRenderingContext, location: WebGLUniformLocation): void;
+    protected abstract setUniform(location: WebGLUniformLocation): void;
 }
 
 export class GlSetUniformFloatCommand extends GlSetUniformCommand<number> {
-    protected override setUniform(context: WebGL2RenderingContext | WebGLRenderingContext, location: WebGLUniformLocation): void {
-        context.uniform1f(location, this.descriptor.value);
+    protected override setUniform(location: WebGLUniformLocation): void {
+        this.context.uniform1f(location, this.descriptor.value);
         statistics.increment('api-calls', 1);
     }
 }
 
 export class GlSetUniformVec2Command extends GlSetUniformCommand<vec2> {
-    protected override setUniform(context: WebGL2RenderingContext | WebGLRenderingContext, location: WebGLUniformLocation): void {
-        context.uniform2fv(location, this.descriptor.value);
+    protected override setUniform(location: WebGLUniformLocation): void {
+        this.context.uniform2fv(location, this.descriptor.value);
         statistics.increment('api-calls', 1);
     }
 }
 
 export class GlSetUniformVec3Command extends GlSetUniformCommand<vec3> {
-    protected override setUniform(context: WebGL2RenderingContext | WebGLRenderingContext, location: WebGLUniformLocation): void {
-        context.uniform3fv(location, this.descriptor.value);
+    protected override setUniform(location: WebGLUniformLocation): void {
+        this.context.uniform3fv(location, this.descriptor.value);
         statistics.increment('api-calls', 1);
     }
 }
 
 export class GlSetUniformVec4Command extends GlSetUniformCommand<vec4> {
-    protected override setUniform(context: WebGL2RenderingContext | WebGLRenderingContext, location: WebGLUniformLocation): void {
-        context.uniform4fv(location, this.descriptor.value);
+    protected override setUniform(location: WebGLUniformLocation): void {
+        this.context.uniform4fv(location, this.descriptor.value);
         statistics.increment('api-calls', 1);
     }
 }
 
 export class GlSetUniformMat2Command extends GlSetUniformCommand<mat2> {
-    protected override setUniform(context: WebGL2RenderingContext | WebGLRenderingContext, location: WebGLUniformLocation): void {
-        context.uniformMatrix2fv(location, false, this.descriptor.value);
+    protected override setUniform(location: WebGLUniformLocation): void {
+        this.context.uniformMatrix2fv(location, false, this.descriptor.value);
         statistics.increment('api-calls', 1);
     }
 }
 
 export class GlSetUniformMat3Command extends GlSetUniformCommand<mat3> {
-    protected override setUniform(context: WebGL2RenderingContext | WebGLRenderingContext, location: WebGLUniformLocation): void {
-        context.uniformMatrix3fv(location, false, this.descriptor.value);
+    protected override setUniform(location: WebGLUniformLocation): void {
+        this.context.uniformMatrix3fv(location, false, this.descriptor.value);
         statistics.increment('api-calls', 1);
     }
 }
 
 export class GlSetUniformMat4Command extends GlSetUniformCommand<mat4> {
-    protected override setUniform(context: WebGL2RenderingContext | WebGLRenderingContext, location: WebGLUniformLocation): void {
-        context.uniformMatrix4fv(location, false, this.descriptor.value);
+    protected override setUniform(location: WebGLUniformLocation): void {
+        this.context.uniformMatrix4fv(location, false, this.descriptor.value);
         statistics.increment('api-calls', 1);
     }
 }
@@ -113,16 +112,17 @@ export class GlSetUniformTextureCommand extends GlSetUniformCommand<Texture> {
         this.textureUnit = descriptor.index;
     }
 
-    protected override setUniform(context: WebGL2RenderingContext | WebGLRenderingContext, location: WebGLUniformLocation): void {
-        context.activeTexture(context.TEXTURE0 + this.textureUnit);
+    protected override setUniform(location: WebGLUniformLocation): void {
+        this.context.activeTexture(this.context.TEXTURE0 + this.textureUnit);
         const texture = this.descriptor.value;
-        context.bindTexture(context.TEXTURE_2D, texture.getId());
-        context.uniform1i(location, this.textureUnit);
+        this.context.bindTexture(this.context.TEXTURE_2D, texture.getId());
+        this.context.uniform1i(location, this.textureUnit);
         statistics.increment('api-calls', 3);
     }
 }
 
 export class GlDrawIndexedCommand implements Command {
+    protected context = getGlContext();
     private indexCount: number;
 
     public constructor(indexCount: number) {
@@ -130,8 +130,7 @@ export class GlDrawIndexedCommand implements Command {
     }
 
     public execute(): void {
-        const context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
-        context.drawElements(context.TRIANGLES, this.indexCount, context.UNSIGNED_SHORT, 0);
+        this.context.drawElements(this.context.TRIANGLES, this.indexCount, this.context.UNSIGNED_SHORT, 0);
         statistics.increment('draw-calls', 1);
         statistics.increment('api-calls', 1);
         statistics.increment('rendered-instances', 1);

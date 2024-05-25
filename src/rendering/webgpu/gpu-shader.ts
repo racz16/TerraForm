@@ -1,15 +1,15 @@
 import { statistics } from '../..';
 import { numberSource } from '../../utility';
-import { getGpuContext } from '../rendering-context';
 import { Shader, ShaderDescriptor } from '../shader';
 import { ShaderLibrary } from '../shader-library';
+import { getGpuDevice } from './gpu-rendering-context';
 
 export class GpuShader implements Shader {
     private shaderModule: GPUShaderModule;
 
     public constructor(descriptor: ShaderDescriptor) {
         const source = ShaderLibrary.get(`gpu-${descriptor.name}`);
-        this.shaderModule = getGpuContext().getDevice().createShaderModule({ code: source, label: descriptor.label });
+        this.shaderModule = getGpuDevice().createShaderModule({ code: source, label: descriptor.label });
         statistics.increment('api-calls', 1);
         if (DEVELOPMENT) {
             this.checkCompilationInfo(descriptor.name, source);

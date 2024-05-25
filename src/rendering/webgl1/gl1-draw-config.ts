@@ -1,9 +1,11 @@
-import { rendering, statistics } from '../..';
+import { statistics } from '../..';
 import { DrawConfig, DrawConfigDescriptor } from '../draw-config';
 import { Mesh, VertexBufferDescriptor } from '../mesh';
-import { getGl1Context } from '../rendering-context';
+import { getRenderingCapabilities } from '../rendering-context';
+import { getGl1ContextWrapper } from './gl1-rendering-context';
 
 export class Gl1DrawConfig implements DrawConfig {
+    protected contextWrapper = getGl1ContextWrapper();
     private extension: OES_vertex_array_object | null;
     private descriptor: DrawConfigDescriptor;
     private vao: WebGLVertexArrayObjectOES | null = null;
@@ -11,13 +13,12 @@ export class Gl1DrawConfig implements DrawConfig {
 
     public constructor(descriptor: DrawConfigDescriptor) {
         this.descriptor = descriptor;
-        const context = getGl1Context();
-        this.extension = context.getVertexArrayObjectExtension();
-        if (rendering.getCapabilities().vertexArray && this.extension) {
+        this.extension = this.contextWrapper.getVertexArrayObjectExtension();
+        if (getRenderingCapabilities().vertexArray && this.extension) {
             this.vao = this.extension.createVertexArrayOES();
             this.extension.bindVertexArrayOES(this.vao);
             const mesh = descriptor.mesh;
-            getGl1Context().configDraw(mesh.vertexBufferDescriptor, mesh.indexBufferDescriptor.buffer, descriptor.instanceData);
+            this.contextWrapper.configDraw(mesh.vertexBufferDescriptor, mesh.indexBufferDescriptor.buffer, descriptor.instanceData);
             this.extension.bindVertexArrayOES(null);
             statistics.increment('api-calls', 3);
         }

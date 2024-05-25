@@ -4,14 +4,13 @@ import { createBuffer, BufferUsage, Buffer } from './buffer';
 import { CommandBuffer, createCommandBuffer } from './command-buffer';
 import { Pipeline, createPipeline } from './pipeline';
 import { createShader } from './shader';
-import { RenderingCapabilities } from './rendering-capabilities';
 import { TimeQuery, createTimeQuery } from './time-query';
 import { addCubeMesh, addQuadMesh } from './generated-mesh';
 import { Cell } from './cell';
 import { RenderingApiOption } from '../options';
 import { Entity } from '../scene/entity';
 import { camera, cellsDebugUi, options, rendering, statistics, time } from '..';
-import { ApiError, RenderingContext, createRenderingContext } from './rendering-context';
+import { ApiError, RenderingContext, createRenderingContext, getRenderingCapabilities } from './rendering-context';
 import { MAT4_ITEM_COUNT, SIZEOF_FLOAT, VEC3_ITEM_COUNT } from '../constants';
 import { Camera } from '../camera';
 import { Texture, createTexture } from './texture';
@@ -72,24 +71,9 @@ export class Rendering {
     private lambertianRenderpass!: Renderpass;
     private quadRenderpass!: Renderpass;
     private canvasDrawConfig!: DrawConfig;
-    private capabilities: RenderingCapabilities = {
-        gpuTimer: false,
-        uniformBuffer: false,
-        instancedRendering: false,
-        ndcCube: true,
-        debugGroups: false,
-        instanceOffset: false,
-        depthTexture: false,
-        uvUp: true,
-        vertexArray: false,
-    };
 
     public getRenderingApi(): RenderingApi {
         return this.renderingApi;
-    }
-
-    public getCapabilities(): RenderingCapabilities {
-        return this.capabilities;
     }
 
     public getCanvas(): HTMLCanvasElement {
@@ -143,10 +127,10 @@ export class Rendering {
 
     private async createResources(): Promise<void> {
         this.context = await createRenderingContext();
-        if (!this.capabilities.instancedRendering) {
+        if (!getRenderingCapabilities().instancedRendering) {
             throw new Error('Instanced rendering is not supported');
         }
-        if (!this.capabilities.depthTexture) {
+        if (!getRenderingCapabilities().depthTexture) {
             throw new Error('Depth textures are not supported');
         }
         const lambertianPipelinePromise = this.createLambertianPipeline();
@@ -233,7 +217,7 @@ export class Rendering {
     }
 
     private createQuery(): void {
-        if (this.capabilities.gpuTimer) {
+        if (getRenderingCapabilities().gpuTimer) {
             this.query = createTimeQuery({
                 label: 'gpu timer query',
                 handler: (elapsed) => {
@@ -256,7 +240,7 @@ export class Rendering {
     }
 
     private createUniformBuffer(): void {
-        if (this.capabilities.uniformBuffer) {
+        if (getRenderingCapabilities().uniformBuffer) {
             const padding = SIZEOF_FLOAT;
             this.uniformBuffer = createBuffer({
                 type: 'size',
@@ -284,14 +268,14 @@ export class Rendering {
     }
 
     private renderScene(): void {
-        if (DEVELOPMENT && this.capabilities.debugGroups) {
+        if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
             this.lambertianRenderpass.pushDebugGroupCommand('frame');
         }
         this.lambertianRenderpass.setPipelineCommand(this.lambertianPipeline);
         this.updateCells(this.lambertianRenderpass);
         this.updateUniforms(this.lambertianRenderpass);
         this.renderCells(this.lambertianRenderpass);
-        if (DEVELOPMENT && this.capabilities.debugGroups) {
+        if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
             this.lambertianRenderpass.popDebugGroupCommand();
         }
     }
@@ -379,12 +363,12 @@ export class Rendering {
     }
 
     private updateCells(renderpass: Renderpass): void {
-        if (DEVELOPMENT && this.capabilities.debugGroups) {
+        if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
             renderpass.pushDebugGroupCommand('update cells');
         }
         this.removeCells();
         this.addCells();
-        if (DEVELOPMENT && this.capabilities.debugGroups) {
+        if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
             renderpass.popDebugGroupCommand();
         }
     }
@@ -453,14 +437,14 @@ export class Rendering {
     }
 
     private renderCells(renderpass: Renderpass): void {
-        if (DEVELOPMENT && this.capabilities.debugGroups) {
+        if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
             renderpass.pushDebugGroupCommand('render cells');
         }
         statistics.set('cells', this.cells.length);
         for (const cell of this.cells) {
             cell.render(renderpass);
         }
-        if (DEVELOPMENT && this.capabilities.debugGroups) {
+        if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
             renderpass.popDebugGroupCommand();
         }
     }
@@ -475,11 +459,11 @@ export class Rendering {
     }
 
     private updateUniforms(renderpass: Renderpass): void {
-        if (DEVELOPMENT && this.capabilities.debugGroups) {
+        if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
             renderpass.pushDebugGroupCommand('update uniforms');
         }
         vec3.normalize(this.lightDirection, vec3.set(this.lightDirection, -1, -2, -3));
-        if (this.capabilities.uniformBuffer) {
+        if (getRenderingCapabilities().uniformBuffer) {
             this.uniformBufferData.set(camera.getVP(), 0);
             this.uniformBufferData.set(this.lightDirection, MAT4_ITEM_COUNT);
             this.uniformBuffer.setData({ type: 'buffer', data: this.uniformBufferData });
@@ -492,7 +476,7 @@ export class Rendering {
             renderpass.setUniformMat4Command({ name: 'VP', value: camera.getVP() });
             renderpass.setUniformVec3Command({ name: 'light', value: this.lightDirection });
         }
-        if (DEVELOPMENT && this.capabilities.debugGroups) {
+        if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
             renderpass.popDebugGroupCommand();
         }
     }
@@ -519,7 +503,7 @@ export class Rendering {
 
     public async release(): Promise<void> {
         await this.context.stop();
-        if (this.capabilities.gpuTimer) {
+        if (getRenderingCapabilities().gpuTimer) {
             this.query?.release();
         }
         this.meshes.length = 0;

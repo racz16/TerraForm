@@ -2,11 +2,31 @@ import { main, rendering, statistics } from '../..';
 import { Buffer } from '../buffer';
 import { VertexBufferDescriptor } from '../mesh';
 import { VertexAttributeFormat } from '../pipeline';
+import { RenderingCapabilities } from '../rendering-capabilities';
 import { RenderingContext } from '../rendering-context';
 import { GL_DEBUG_RENDERER_INFO } from './gl-extensions';
 
+export function getGlContextWrapper(): GlRenderingContext {
+    return rendering.getContext() as GlRenderingContext;
+}
+
+export function getGlContext(): WebGLRenderingContext | WebGL2RenderingContext {
+    return getGlContextWrapper().getId();
+}
+
 export abstract class GlRenderingContext implements RenderingContext {
-    protected context!: WebGLRenderingContextBase;
+    protected context!: WebGLRenderingContext | WebGL2RenderingContext;
+    protected capabilities: RenderingCapabilities = {
+        ndcCube: true,
+        debugGroups: false,
+        instanceOffset: false,
+        uvUp: true,
+        depthTexture: false,
+        gpuTimer: false,
+        instancedRendering: false,
+        uniformBuffer: false,
+        vertexArray: false,
+    };
 
     public abstract initialize(): void;
 
@@ -45,10 +65,6 @@ export abstract class GlRenderingContext implements RenderingContext {
                 }
             }
         }
-        rendering.getCapabilities().ndcCube = true;
-        rendering.getCapabilities().debugGroups = false;
-        rendering.getCapabilities().instanceOffset = false;
-        rendering.getCapabilities().uvUp = true;
         this.capabilitiesAndExtensions();
         if (DEVELOPMENT) {
             console.groupEnd();
@@ -57,14 +73,18 @@ export abstract class GlRenderingContext implements RenderingContext {
 
     protected abstract capabilitiesAndExtensions(): void;
 
-    protected abstract createContext(): WebGLRenderingContextBase;
+    protected abstract createContext(): WebGLRenderingContext | WebGL2RenderingContext;
 
-    protected getContext(id: 'webgl' | 'webgl-experimental' | 'webgl2'): WebGLRenderingContextBase | null {
+    public getCapabilities(): RenderingCapabilities {
+        return this.capabilities;
+    }
+
+    protected getContext(id: 'webgl' | 'webgl-experimental' | 'webgl2'): WebGLRenderingContext | WebGL2RenderingContext | null {
         const context = rendering.getCanvas().getContext(id, {
             powerPreference: 'high-performance',
             depth: false,
             antialias: false,
-        }) as WebGLRenderingContextBase | null;
+        }) as WebGLRenderingContext | WebGL2RenderingContext | null;
         statistics.increment('api-calls', 1);
         rendering.getCanvas().addEventListener('webglcontextlost', (event) => {
             console.log('WebGL context lost', event);
@@ -73,7 +93,7 @@ export abstract class GlRenderingContext implements RenderingContext {
         return context;
     }
 
-    public getId(): WebGLRenderingContextBase {
+    public getId(): WebGLRenderingContext | WebGL2RenderingContext {
         return this.context;
     }
 

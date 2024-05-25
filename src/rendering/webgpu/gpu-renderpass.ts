@@ -1,8 +1,8 @@
-import { rendering, statistics } from '../..';
+import { statistics } from '../..';
 import { Buffer } from '../buffer';
 import { Command } from '../command';
 import { Pipeline } from '../pipeline';
-import { getGpuContext } from '../rendering-context';
+import { getRenderingCapabilities } from '../rendering-context';
 import {
     DrawInstancedIndexedCommandDescriptor,
     Renderpass,
@@ -27,6 +27,7 @@ import {
     GpuSetDrawConfigCommand,
 } from './gpu-command';
 import { GpuCommandBuffer } from './gpu-command-buffer';
+import { getGpuContextWrapper } from './gpu-rendering-context';
 import { GpuTexture } from './gpu-texture';
 import { GpuTimeQuery } from './gpu-time-query';
 
@@ -61,7 +62,7 @@ export class GpuRenderpass implements Renderpass {
             };
             statistics.increment('api-calls', 1);
         }
-        if (rendering.getCapabilities().gpuTimer && this.query) {
+        if (getRenderingCapabilities().gpuTimer && this.query) {
             renderPassDescriptor.timestampWrites = {
                 querySet: this.query.getId(),
                 beginningOfPassWriteIndex: 0,
@@ -80,7 +81,7 @@ export class GpuRenderpass implements Renderpass {
                     loadOp: descriptor.clearColor ? 'clear' : 'load',
                     clearValue: descriptor.clearColor,
                     storeOp: 'store',
-                    view: getGpuContext().getCurrentTexture().createView(),
+                    view: getGpuContextWrapper().getCurrentTexture().createView(),
                 },
             ];
         } else {
@@ -182,7 +183,7 @@ export class GpuRenderpass implements Renderpass {
         }
         this.commands.length = 0;
         this.renderPassEncoder.end();
-        if (rendering.getCapabilities().gpuTimer && this.query) {
+        if (getRenderingCapabilities().gpuTimer && this.query) {
             this.query.resolve(commandEncoder);
         }
         statistics.increment('api-calls', 1);

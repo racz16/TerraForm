@@ -2,6 +2,7 @@ import { bytesToMegaBytes, getElement, secondsToMilliseconds } from '../utility'
 import { options, rendering, statistics, time } from '..';
 import { StatisticKey } from '../statistics';
 import { toStringRenderingApi } from '../rendering/rendering';
+import { getRenderingCapabilities } from '../rendering/rendering-context';
 
 export class StatisticsUi {
     private statisticsElement = getElement('#statistics');
@@ -82,7 +83,7 @@ export class StatisticsUi {
     }
 
     private updateGpuTime(): void {
-        if (rendering.getCapabilities().gpuTimer) {
+        if (getRenderingCapabilities().gpuTimer) {
             const gpuTimeString = time.getGpuTime().toFixed(2);
             this.gpuTimeElement.textContent = `GPU time: ${gpuTimeString} ms`;
         } else {

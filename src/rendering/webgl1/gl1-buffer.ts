@@ -4,8 +4,6 @@ import { mathTypeToTypedArray } from '../../utility';
 import { statistics } from '../..';
 
 export class Gl1Buffer extends GlBuffer {
-    protected context!: WebGLRenderingContext;
-
     protected override initializeBufferData(descriptor: BufferDescriptor): void {
         const glUsage = descriptor.dynamic ? this.context.DYNAMIC_DRAW : this.context.STATIC_DRAW;
         if (descriptor.type === 'size') {

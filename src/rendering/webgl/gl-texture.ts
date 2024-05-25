@@ -1,16 +1,14 @@
 import { statistics } from '../..';
-import { isWebGL2 } from '../rendering';
-import { getGl2Context, getGl1Context } from '../rendering-context';
 import { Texture, Texture2dDescriptor } from '../texture';
+import { getGlContext } from './gl-rendering-context';
 
 export abstract class GlTexture implements Texture {
-    protected context: WebGLRenderingContext | WebGL2RenderingContext;
+    protected context = getGlContext();
     protected id: WebGLTexture;
     protected size = 0;
     protected valid = true;
 
     public constructor(descriptor: Texture2dDescriptor) {
-        this.context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
         this.id = this.context.createTexture()!;
         this.context.bindTexture(this.context.TEXTURE_2D, this.id);
         this.context.texImage2D(

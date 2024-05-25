@@ -1,8 +1,17 @@
 import { main, rendering, statistics } from '../../index';
 import { Buffer } from '../buffer';
 import { VertexBufferDescriptor } from '../mesh';
+import { RenderingCapabilities } from '../rendering-capabilities';
 import { ApiError, RenderingContext } from '../rendering-context';
 import { GpuRenderpass } from './gpu-renderpass';
+
+export function getGpuContextWrapper(): GpuRenderingContext {
+    return rendering.getContext() as GpuRenderingContext;
+}
+
+export function getGpuDevice(): GPUDevice {
+    return getGpuContextWrapper().getDevice();
+}
 
 export class GpuRenderingContext implements RenderingContext {
     private deviceLostCount = 0;
@@ -10,6 +19,17 @@ export class GpuRenderingContext implements RenderingContext {
     private context!: GPUCanvasContext;
     private device!: GPUDevice;
     private valid = true;
+    private capabilities: RenderingCapabilities = {
+        ndcCube: false,
+        uniformBuffer: true,
+        instancedRendering: true,
+        debugGroups: true,
+        instanceOffset: true,
+        depthTexture: true,
+        uvUp: false,
+        vertexArray: false,
+        gpuTimer: false,
+    };
 
     public async initialize(): Promise<void> {
         try {
@@ -20,14 +40,6 @@ export class GpuRenderingContext implements RenderingContext {
             const adapter = await this.getAdapter();
             this.device = await this.createDevice(adapter);
             this.context = this.getContext();
-            rendering.getCapabilities().ndcCube = false;
-            rendering.getCapabilities().uniformBuffer = true;
-            rendering.getCapabilities().instancedRendering = true;
-            rendering.getCapabilities().debugGroups = true;
-            rendering.getCapabilities().instanceOffset = true;
-            rendering.getCapabilities().depthTexture = true;
-            rendering.getCapabilities().uvUp = false;
-            rendering.getCapabilities().vertexArray = false;
         } finally {
             if (DEVELOPMENT) {
                 console.groupEnd();
@@ -37,6 +49,10 @@ export class GpuRenderingContext implements RenderingContext {
 
     public getId(): GPUCanvasContext {
         return this.context;
+    }
+
+    public getCapabilities(): RenderingCapabilities {
+        return this.capabilities;
     }
 
     public getCanvasFormat(): GPUTextureFormat {
@@ -135,8 +151,8 @@ export class GpuRenderingContext implements RenderingContext {
     private createDeviceDescriptor(adapter: GPUAdapter): GPUDeviceDescriptor {
         const deviceDescriptor: GPUDeviceDescriptor = {};
         const TIMESTAMP_QUERY_FEATURE = 'timestamp-query';
-        rendering.getCapabilities().gpuTimer = adapter.features.has(TIMESTAMP_QUERY_FEATURE);
-        if (rendering.getCapabilities().gpuTimer) {
+        this.capabilities.gpuTimer = adapter.features.has(TIMESTAMP_QUERY_FEATURE);
+        if (this.capabilities.gpuTimer) {
             deviceDescriptor.requiredFeatures = [TIMESTAMP_QUERY_FEATURE];
             if (DEVELOPMENT) {
                 console.log(`'${TIMESTAMP_QUERY_FEATURE}' is supported`);

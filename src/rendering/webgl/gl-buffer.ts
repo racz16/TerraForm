@@ -1,10 +1,9 @@
 import { statistics } from '../..';
 import { Buffer, BufferUsage, BufferDescriptor, BufferDataDescriptor } from '../buffer';
-import { isWebGL2 } from '../rendering';
-import { getGl1Context, getGl2Context } from '../rendering-context';
+import { getGlContext } from './gl-rendering-context';
 
 export abstract class GlBuffer implements Buffer {
-    protected context: WebGLRenderingContext | WebGL2RenderingContext;
+    protected context = getGlContext();
     protected id: WebGLBuffer | null;
     protected size = 0;
     protected usage: BufferUsage;
@@ -12,7 +11,6 @@ export abstract class GlBuffer implements Buffer {
     protected valid = true;
 
     public constructor(descriptor: BufferDescriptor) {
-        this.context = isWebGL2() ? getGl2Context().getId() : getGl1Context().getId();
         this.size = this.computeSize(descriptor);
         this.usage = descriptor.usage;
         this.target = this.getTarget();
