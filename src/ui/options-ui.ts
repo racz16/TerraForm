@@ -3,7 +3,7 @@ import { RenderingApiOption } from '../options';
 import { getElement } from '../utility';
 
 export class OptionsUi {
-    private dialog = getElement<HTMLDivElement>('#dialog');
+    private optionsPanel = getElement<HTMLDivElement>('#options');
     private apiSelector: HTMLSelectElement;
     private opened = false;
 
@@ -50,12 +50,12 @@ export class OptionsUi {
     private handleDialogChange(opened: boolean): void {
         this.opened = opened;
         if (this.opened) {
-            this.dialog.style.display = 'block';
+            this.optionsPanel.style.display = 'block';
             if (DEVELOPMENT) {
                 console.log('Options UI opened');
             }
         } else {
-            this.dialog.style.display = 'none';
+            this.optionsPanel.style.display = 'none';
             if (DEVELOPMENT) {
                 console.log('Options UI closed');
             }

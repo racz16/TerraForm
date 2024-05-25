@@ -14,7 +14,7 @@ export class CellsDebugUi {
         }
     }
 
-    public update(): void {
+    public recreate(): void {
         while (this.grid.lastChild) {
             this.grid.removeChild(this.grid.lastChild);
         }
@@ -27,10 +27,10 @@ export class CellsDebugUi {
         const gridSize = 2 * halfGridSize + 1;
         this.grid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
         this.grid.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
-        this.updateCells(gridSize);
+        this.createCells(gridSize);
     }
 
-    private updateCells(gridSize: number): void {
+    private createCells(gridSize: number): void {
         const size = rendering.getCanvas().clientHeight / 3 / gridSize;
         for (let i = 0; i < gridSize * gridSize; i++) {
             const div = document.createElement('div');

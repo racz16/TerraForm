@@ -304,7 +304,7 @@ export class Rendering {
         if (this.canvas.width !== window.innerWidth || this.canvas.height !== window.innerHeight) {
             this.canvas.width = window.innerWidth;
             this.canvas.height = window.innerHeight;
-            cellsDebugUi.update();
+            cellsDebugUi.recreate();
             camera.invalidate();
             this.recreateRenderpassAttachments();
         }

@@ -153,7 +153,7 @@ export class Options {
     public setCellsDebugger(cellsDebugger: boolean): void {
         this.cellsDebugger = cellsDebugger;
         localStorage.setItem('cellsDebugger', this.cellsDebugger.toString());
-        cellsDebugUi.update();
+        cellsDebugUi.recreate();
         if (cellsDebugger) {
             cellsDebugUi.show();
         } else {
@@ -172,7 +172,7 @@ export class Options {
         this.fovY = fovY;
         localStorage.setItem('fovY', this.fovY.toString());
         Camera.updateMaxFrustumDistance();
-        cellsDebugUi.update();
+        cellsDebugUi.recreate();
         camera.invalidate();
         if (DEVELOPMENT) {
             console.log('Field of view changed');
@@ -187,7 +187,7 @@ export class Options {
         this.viewDistance = viewDistance;
         localStorage.setItem('viewDistance', this.viewDistance.toString());
         Camera.updateMaxFrustumDistance();
-        cellsDebugUi.update();
+        cellsDebugUi.recreate();
         camera.invalidate();
         if (DEVELOPMENT) {
             console.log('View distance changed');
@@ -202,7 +202,7 @@ export class Options {
         this.cellSize = cellSize;
         localStorage.setItem('cellSize', this.cellSize.toString());
         rendering.removeAllCells();
-        cellsDebugUi.update();
+        cellsDebugUi.recreate();
         if (DEVELOPMENT) {
             console.log('Cell size changed');
         }
@@ -216,7 +216,6 @@ export class Options {
         this.instanceCount = instanceCount;
         localStorage.setItem('instanceCount', this.instanceCount.toString());
         rendering.removeAllCells();
-        cellsDebugUi.update();
         if (DEVELOPMENT) {
             console.log('Instance count changed');
         }
