@@ -1,6 +1,7 @@
 import { rendering } from '..';
 import { SIZEOF_FLOAT, SIZEOF_SHORT, VEC2_ITEM_COUNT, VEC3_ITEM_COUNT } from '../constants';
 import { BufferUsage, createBuffer } from './buffer';
+import { lambertianVertexLayout, quadVertexLayout } from './layout';
 import { getRenderingCapabilities } from './rendering-context';
 
 const SIDE_VERTEX_COUNT = 4;
@@ -21,10 +22,6 @@ export function addQuadMesh(): void {
                 -1,
                 1,
                 0,
-                //normal
-                0,
-                0,
-                1,
                 //uv
                 0,
                 top,
@@ -33,10 +30,6 @@ export function addQuadMesh(): void {
                 -1,
                 -1,
                 0,
-                //normal
-                0,
-                0,
-                1,
                 //uv
                 0,
                 bottom,
@@ -45,10 +38,6 @@ export function addQuadMesh(): void {
                 1,
                 -1,
                 0,
-                //normal
-                0,
-                0,
-                1,
                 //uv
                 1,
                 bottom,
@@ -57,10 +46,6 @@ export function addQuadMesh(): void {
                 1,
                 1,
                 0,
-                //normal
-                0,
-                0,
-                1,
                 //uv
                 1,
                 top,
@@ -80,9 +65,99 @@ export function addQuadMesh(): void {
         usage: BufferUsage.INDEX,
         label: 'Quad index buffer',
     });
-    rendering.addMesh('quad', vertexBuffer, indexBuffer, SIDE_VERTEX_COUNT, SIDE_TRIANGLE_COUNT * TRIANGLE_VERTEX_COUNT);
+    rendering.addMesh('quad', vertexBuffer, indexBuffer, SIDE_VERTEX_COUNT, SIDE_TRIANGLE_COUNT * TRIANGLE_VERTEX_COUNT, quadVertexLayout);
     if (DEVELOPMENT) {
         console.log('Quad mesh created');
+    }
+}
+
+export function addPlaneMesh(): void {
+    const uvUp = getRenderingCapabilities().uvUp;
+    const top = uvUp ? 1 : 0;
+    const bottom = uvUp ? 0 : 1;
+    const vertexBuffer = createBuffer({
+        type: 'data-callback',
+        callback: (data) => {
+            const vertexData = new Float32Array(data);
+            vertexData.set([
+                // top-left vertex
+                //position
+                -1,
+                0,
+                -1,
+                //u
+                0,
+                //normal
+                0,
+                1,
+                0,
+                //v
+                top,
+                // bottom-left vertex
+                //position
+                -1,
+                0,
+                1,
+                //u
+                0,
+                //normal
+                0,
+                1,
+                0,
+                //v
+                bottom,
+                // bottom-right vertex
+                //position
+                1,
+                0,
+                1,
+                //u
+                1,
+                //normal
+                0,
+                1,
+                0,
+                //v
+                bottom,
+                // top-right vertex
+                //position
+                1,
+                0,
+                -1,
+                //u
+                1,
+                //normal
+                0,
+                1,
+                0,
+                //v
+                top,
+            ]);
+        },
+        size: SIDE_VERTEX_COUNT * (2 * VEC3_ITEM_COUNT + VEC2_ITEM_COUNT) * SIZEOF_FLOAT,
+        usage: BufferUsage.VERTEX,
+        label: 'Plane vertex buffer',
+    });
+    const indexBuffer = createBuffer({
+        type: 'data-callback',
+        callback: (data) => {
+            const indexData = new Uint16Array(data);
+            indexData.set([0, 1, 2, 3, 0, 2]);
+        },
+        size: SIDE_TRIANGLE_COUNT * TRIANGLE_VERTEX_COUNT * SIZEOF_SHORT,
+        usage: BufferUsage.INDEX,
+        label: 'Plane index buffer',
+    });
+    rendering.addMesh(
+        'plane',
+        vertexBuffer,
+        indexBuffer,
+        SIDE_VERTEX_COUNT,
+        SIDE_TRIANGLE_COUNT * TRIANGLE_VERTEX_COUNT,
+        lambertianVertexLayout
+    );
+    if (DEVELOPMENT) {
+        console.log('Plane mesh created');
     }
 }
 
@@ -97,181 +172,229 @@ export function addCubeMesh(): void {
                 // -- top-left vertex
                 // ---- position
                 -0.5, 0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 0, 1,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-left vertex
                 // ---- position
                 -0.5, -0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 0, 1,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-right vertex
                 // ---- position
                 0.5, -0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 0, 1,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- top-right vertex
                 // ---- position
                 0.5, 0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 0, 1,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
 
                 // LEFT FACE
                 // -- top-left vertex
                 // ---- position
                 -0.5, 0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 -1, 0, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-left vertex
                 // ---- position
                 -0.5, -0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 -1, 0, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-right vertex
                 // ---- position
                 -0.5, -0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 -1, 0, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- top-right vertex
                 // ---- position
                 -0.5, 0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 -1, 0, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
 
                 // RIGHT FACE
                 // -- top-left vertex
                 // ---- position
                 0.5, 0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 1, 0, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-left vertex
                 // ---- position
                 0.5, -0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 1, 0, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-right vertex
                 // ---- position
                 0.5, -0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 1, 0, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- top-right vertex
                 // ---- position
                 0.5, 0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 1, 0, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
 
                 // BACK FACE
                 // -- top-left vertex
                 // ---- position
                 0.5, 0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 0, -1,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-left vertex
                 // ---- position
                 0.5, -0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 0, -1,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-right vertex
                 // ---- position
                 -0.5, -0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 0, -1,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- top-right vertex
                 // ---- position
                 -0.5, 0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 0, -1,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
 
                 // TOP FACE
                 // -- top-left vertex
                 // ---- position
                 -0.5, 0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 1, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-left vertex
                 // ---- position
                 -0.5, 0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 1, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-right vertex
                 // ---- position
                 0.5, 0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 1, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- top-right vertex
                 // ---- position
                 0.5, 0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, 1, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
 
                 // BOTTOM FACE
                 // -- top-left vertex
                 // ---- position
                 -0.5, -0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, -1, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-left vertex
                 // ---- position
                 -0.5, -0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, -1, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- bottom-right vertex
                 // ---- position
                 0.5, -0.5, -0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, -1, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
                 // -- top-right vertex
                 // ---- position
                 0.5, -0.5, 0.5,
+                // ---- u
+                0,
                 // ---- normal
                 0, -1, 0,
-                // ---- uv
-                0, 0,
+                // ---- v
+                0,
             ]);
         },
         size: SIDE_COUNT * SIDE_VERTEX_COUNT * (2 * VEC3_ITEM_COUNT + VEC2_ITEM_COUNT) * SIZEOF_FLOAT,
@@ -306,7 +429,8 @@ export function addCubeMesh(): void {
         vertexBuffer,
         indexBuffer,
         SIDE_COUNT * SIDE_VERTEX_COUNT,
-        SIDE_COUNT * SIDE_TRIANGLE_COUNT * TRIANGLE_VERTEX_COUNT
+        SIDE_COUNT * SIDE_TRIANGLE_COUNT * TRIANGLE_VERTEX_COUNT,
+        lambertianVertexLayout
     );
     if (DEVELOPMENT) {
         console.log('Cube mesh created');

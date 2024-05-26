@@ -1,69 +1,77 @@
-import { MAT4_ITEM_COUNT, VEC3_ITEM_COUNT, SIZEOF_FLOAT, VEC4_ITEM_COUNT, VEC2_ITEM_COUNT } from '../constants';
+import { VEC3_ITEM_COUNT, SIZEOF_FLOAT, VEC4_ITEM_COUNT, VEC2_ITEM_COUNT } from '../constants';
 import { VertexAttributeFormat, VertexBufferLayout } from './pipeline';
-
-const VERTEX_POSITION_INDEX = 0;
-const VERTEX_NORMAL_INDEX = 1;
-const VERTEX_TEXTURE_COORDINATE_INDEX = 2;
-const INSTANCE_MODEL_MATRIX_INDEX = 3;
-const INSTANCE_COLOR_INDEX = 7;
 
 export const VERTEX_BUFFER_INDEX = 0;
 export const INSTANCE_BUFFER_INDEX = 1;
 
-export const vertexLayout: VertexBufferLayout = {
+const LAMBERTIAN_POSITION_U_INDEX = 0;
+const LAMBERTIAN_NORMAL_V_INDEX = 1;
+
+export const lambertianVertexLayout: VertexBufferLayout = {
     stride: (2 * VEC3_ITEM_COUNT + VEC2_ITEM_COUNT) * SIZEOF_FLOAT,
     instanced: false,
     attributes: [
         {
-            index: VERTEX_POSITION_INDEX,
-            name: 'vertexPosition',
+            index: LAMBERTIAN_POSITION_U_INDEX,
+            name: 'vertex_position_u',
+            offset: 0,
+            format: VertexAttributeFormat.FLOAT_4,
+        },
+        {
+            index: LAMBERTIAN_NORMAL_V_INDEX,
+            name: 'vertex_normal_v',
+            offset: VEC4_ITEM_COUNT * SIZEOF_FLOAT,
+            format: VertexAttributeFormat.FLOAT_4,
+        },
+    ],
+};
+
+const QUAD_POSITION_INDEX = 0;
+const QUAD_TEXTURE_COORDINATE_INDEX = 1;
+
+export const quadVertexLayout: VertexBufferLayout = {
+    stride: (VEC3_ITEM_COUNT + VEC2_ITEM_COUNT) * SIZEOF_FLOAT,
+    instanced: false,
+    attributes: [
+        {
+            index: QUAD_POSITION_INDEX,
+            name: 'vertex_position',
             offset: 0,
             format: VertexAttributeFormat.FLOAT_3,
         },
         {
-            index: VERTEX_NORMAL_INDEX,
-            name: 'vertexNormal',
+            index: QUAD_TEXTURE_COORDINATE_INDEX,
+            name: 'vertex_tc',
             offset: VEC3_ITEM_COUNT * SIZEOF_FLOAT,
-            format: VertexAttributeFormat.FLOAT_3,
-        },
-        {
-            index: VERTEX_TEXTURE_COORDINATE_INDEX,
-            name: 'vertexTextureCoordinate',
-            offset: 2 * VEC3_ITEM_COUNT * SIZEOF_FLOAT,
             format: VertexAttributeFormat.FLOAT_2,
         },
     ],
 };
 
+const INSTANCE_POSITION_SCALE_INDEX = 2;
+const INSTANCE_ROTATION_INDEX = 3;
+const INSTANCE_COLOR_INDEX = 4;
+
 export const instanceLayout: VertexBufferLayout = {
-    stride: (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
+    stride: (VEC4_ITEM_COUNT + 2 * VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
     instanced: true,
     attributes: [
         {
-            index: INSTANCE_MODEL_MATRIX_INDEX,
-            name: 'M',
+            index: INSTANCE_POSITION_SCALE_INDEX,
+            name: 'instance_position_scale',
             offset: 0,
             format: VertexAttributeFormat.FLOAT_4,
         },
         {
-            index: INSTANCE_MODEL_MATRIX_INDEX + 1,
+            index: INSTANCE_ROTATION_INDEX,
+            name: 'instance_rotation',
             offset: VEC4_ITEM_COUNT * SIZEOF_FLOAT,
-            format: VertexAttributeFormat.FLOAT_4,
-        },
-        {
-            index: INSTANCE_MODEL_MATRIX_INDEX + 2,
-            offset: 2 * VEC4_ITEM_COUNT * SIZEOF_FLOAT,
-            format: VertexAttributeFormat.FLOAT_4,
-        },
-        {
-            index: INSTANCE_MODEL_MATRIX_INDEX + 3,
-            offset: 3 * VEC4_ITEM_COUNT * SIZEOF_FLOAT,
-            format: VertexAttributeFormat.FLOAT_4,
+            format: VertexAttributeFormat.FLOAT_3,
         },
         {
             index: INSTANCE_COLOR_INDEX,
-            name: 'color',
-            offset: MAT4_ITEM_COUNT * SIZEOF_FLOAT,
+            name: 'instance_color',
+            offset: (VEC4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
             format: VertexAttributeFormat.FLOAT_3,
         },
     ],

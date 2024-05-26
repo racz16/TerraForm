@@ -1,23 +1,23 @@
-struct Vertex {
-    @location(0) vertexPosition: vec3f,
-    @location(2) vertexTextureCoordinate: vec2f,
+struct vertex_t {
+    @location(0) vertex_position: vec3f,
+    @location(1) vertex_tc: vec2f,
 };
 
-struct Varying {
+struct varying_t {
     @builtin(position) position: vec4f,
-    @location(0) textureCoordinate: vec2f
+    @location(0) tc: vec2f
 };
 
-@vertex fn vertex(vertex: Vertex) -> Varying {
-    var vf_varying: Varying;
-    vf_varying.position = vec4f(vertex.vertexPosition, 1.0);
-    vf_varying.textureCoordinate = vertex.vertexTextureCoordinate;
+@vertex fn vertex(vertex: vertex_t) -> varying_t {
+    var vf_varying: varying_t;
+    vf_varying.position = vec4f(vertex.vertex_position, 1.0);
+    vf_varying.tc = vertex.vertex_tc;
     return vf_varying;
 }
 
-@group(0) @binding(0) var quadSampler: sampler;
-@group(0) @binding(1) var quadTexture: texture_2d<f32>;
+@group(0) @binding(0) var quad_sampler: sampler;
+@group(0) @binding(1) var quad_texture: texture_2d<f32>;
 
-@fragment fn fragment(vf_varying: Varying) -> @location(0) vec4f {
-    return textureSample(quadTexture, quadSampler, vf_varying.textureCoordinate);
+@fragment fn fragment(vf_varying: varying_t) -> @location(0) vec4f {
+    return textureSample(quad_texture, quad_sampler, vf_varying.tc);
 }

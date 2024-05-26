@@ -3,7 +3,7 @@ import { mat4, quat, vec3, vec4 } from 'gl-matrix';
 import { Entity } from '../scene/entity';
 import { createBuffer, BufferUsage, Buffer } from './buffer';
 import { camera, options, statistics } from '..';
-import { MAT4_ITEM_COUNT, SIZEOF_FLOAT, VEC3_ITEM_COUNT } from '../constants';
+import { VEC3_ITEM_COUNT, VEC4_ITEM_COUNT } from '../constants';
 import { addToVec3Pool } from '../utility';
 import { Renderpass } from './renderpass';
 import { Mesh } from './mesh';
@@ -84,7 +84,7 @@ export class Cell {
                         buffer: this.instanceBuffer,
                         index: INSTANCE_BUFFER_INDEX,
                         vertexCount: entityCount,
-                        offset: offset * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
+                        offset: offset * instanceLayout.stride,
                         layout: instanceLayout,
                     },
                 });
@@ -101,7 +101,7 @@ export class Cell {
     private createInstanceBuffer(meshes: Mesh[]): Buffer {
         return createBuffer({
             type: 'data-callback',
-            size: this.entities.length * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
+            size: this.entities.length * instanceLayout.stride,
             callback: (data) => {
                 const instanceData = new Float32Array(data);
                 let offset = 0;
@@ -118,17 +118,12 @@ export class Cell {
     }
 
     private addInstanceData(instanceData: Float32Array, entities: Entity[], offset: number): void {
+        const strideInFloat = VEC4_ITEM_COUNT + 2 * VEC3_ITEM_COUNT;
         for (let i = 0; i < entities.length; i++) {
             const entity = entities[i];
-            const instanceDataStartPosition = (i + offset) * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT);
-            mat4.fromRotationTranslationScale(
-                Cell.M,
-                quat.fromEuler(Cell.q, entity.rotation[0], entity.rotation[1], entity.rotation[2]),
-                entity.position,
-                entity.scale
-            );
-            instanceData.set(Cell.M, instanceDataStartPosition);
-            instanceData.set(entity.color, instanceDataStartPosition + MAT4_ITEM_COUNT);
+            const instanceOffset = (i + offset) * strideInFloat;
+            const data = [...entity.position, entity.scale, ...entity.rotation, ...entity.color];
+            instanceData.set(data, instanceOffset);
         }
     }
 
@@ -228,7 +223,6 @@ export class Cell {
             for (const entity of this.entities) {
                 addToVec3Pool(entity.position);
                 addToVec3Pool(entity.rotation);
-                addToVec3Pool(entity.scale);
             }
             this.releaseResources();
             this.valid = false;

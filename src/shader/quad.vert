@@ -1,16 +1,16 @@
 #if __VERSION__ == 100
-    attribute vec3 vertexPosition;
-    attribute vec2 vertexTextureCoordinate;
+    attribute vec3 vertex_position;
+    attribute vec2 vertex_tc;
 
-    varying vec2 vf_vertexTextureCoordinate;
+    varying vec2 vf_tc;
 #else
-    layout(location = 0) in vec3 vertexPosition;
-    layout(location = 2) in vec2 vertexTextureCoordinate;
+    layout(location = 0) in vec3 vertex_position;
+    layout(location = 1) in vec2 vertex_tc;
 
-    out vec2 vf_vertexTextureCoordinate;
+    out vec2 vf_tc;
 #endif
 
 void main() {
-    vf_vertexTextureCoordinate = vertexTextureCoordinate;
-    gl_Position = vec4(vertexPosition, 1.0);
+    vf_tc = vertex_tc;
+    gl_Position = vec4(vertex_position, 1.0);
 }

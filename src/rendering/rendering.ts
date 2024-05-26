@@ -2,10 +2,10 @@ import { vec3 } from 'gl-matrix';
 
 import { createBuffer, BufferUsage, Buffer } from './buffer';
 import { CommandBuffer, createCommandBuffer } from './command-buffer';
-import { Pipeline, createPipeline } from './pipeline';
+import { Pipeline, VertexBufferLayout, createPipeline } from './pipeline';
 import { createShader } from './shader';
 import { TimeQuery, createTimeQuery } from './time-query';
-import { addCubeMesh, addQuadMesh } from './generated-mesh';
+import { addCubeMesh, addPlaneMesh, addQuadMesh } from './generated-mesh';
 import { Cell } from './cell';
 import { RenderingApiOption } from '../options';
 import { Entity } from '../scene/entity';
@@ -17,7 +17,7 @@ import { Texture, createTexture } from './texture';
 import { Renderpass } from './renderpass';
 import { Mesh } from './mesh';
 import { DrawConfig, createDrawConfig } from './draw-config';
-import { instanceLayout, vertexLayout, VERTEX_BUFFER_INDEX } from './layout';
+import { instanceLayout, lambertianVertexLayout, quadVertexLayout, VERTEX_BUFFER_INDEX } from './layout';
 
 export enum RenderingApi {
     WEBGL_1 = 1,
@@ -175,7 +175,14 @@ export class Rendering {
         return canvas;
     }
 
-    public addMesh(name: string, vertexBuffer: Buffer, indexBuffer: Buffer, vertexCount: number, indexCount: number): void {
+    public addMesh(
+        name: string,
+        vertexBuffer: Buffer,
+        indexBuffer: Buffer,
+        vertexCount: number,
+        indexCount: number,
+        layout: VertexBufferLayout
+    ): void {
         this.vertexBuffers.push(vertexBuffer);
         this.indexBuffers.push(indexBuffer);
         const mesh: Mesh = {
@@ -184,7 +191,7 @@ export class Rendering {
                 buffer: vertexBuffer,
                 index: VERTEX_BUFFER_INDEX,
                 vertexCount,
-                layout: vertexLayout,
+                layout,
             },
             indexBufferDescriptor: {
                 buffer: indexBuffer,
@@ -197,24 +204,24 @@ export class Rendering {
     private async createLambertianPipeline(): Promise<Pipeline> {
         const shader = createShader({
             name: 'lambertian',
-            vertexBufferLayouts: [vertexLayout, instanceLayout],
+            vertexBufferLayouts: [lambertianVertexLayout, instanceLayout],
             label: 'lambertian shader',
         });
         return createPipeline({
             label: 'lambertian pipeline',
             shader: shader,
-            vertexBufferLayouts: [vertexLayout, instanceLayout],
+            vertexBufferLayouts: [lambertianVertexLayout, instanceLayout],
             attachmentFormats: ['rgba8'],
             depthAttachment: true,
         });
     }
 
     private async createQuadPipeline(): Promise<Pipeline> {
-        const shader = createShader({ name: 'quad', vertexBufferLayouts: [vertexLayout], label: 'quad shader' });
+        const shader = createShader({ name: 'quad', vertexBufferLayouts: [quadVertexLayout], label: 'quad shader' });
         return createPipeline({
             label: 'quad pipeline',
             shader: shader,
-            vertexBufferLayouts: [vertexLayout],
+            vertexBufferLayouts: [quadVertexLayout],
             attachmentFormats: ['canvas'],
         });
     }
@@ -235,6 +242,7 @@ export class Rendering {
 
     private createMeshes(): void {
         addQuadMesh();
+        addPlaneMesh();
         addCubeMesh();
         statistics.set('meshes', this.meshes.length);
         if (DEVELOPMENT) {
@@ -284,14 +292,10 @@ export class Rendering {
     }
 
     private renderToCanvas(): void {
-        const quadMesh = this.meshes.find((m) => m.name === 'quad');
-        if (!quadMesh) {
-            throw new Error("Couldn't find quad mesh");
-        }
         this.quadRenderpass.setPipelineCommand(this.quadPipeline);
         this.quadRenderpass.setDrawConfigCommand({ drawConfig: this.canvasDrawConfig });
         this.quadRenderpass.setUniformTextureCommand({ name: 'image', value: this.color!, index: 0 });
-        this.quadRenderpass.drawIndexedCommand(quadMesh.indexBufferDescriptor.indexCount);
+        this.quadRenderpass.drawIndexedCommand(this.canvasDrawConfig.getMesh().indexBufferDescriptor.indexCount);
     }
 
     private async handleRecreation(): Promise<void> {
@@ -464,7 +468,7 @@ export class Rendering {
             this.uniformBuffer.setData({ type: 'buffer', data: this.uniformBufferData });
             this.lambertianRenderpass.setUniformBufferCommand({
                 index: 0,
-                name: 'FrameData',
+                name: 'frame_data',
                 value: this.uniformBuffer,
             });
         } else {

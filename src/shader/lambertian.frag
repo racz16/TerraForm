@@ -11,7 +11,7 @@ precision highp float;
 
     layout(location = 0) out vec4 color;
     
-    layout(std140) uniform FrameData {
+    layout(std140) uniform frame_data {
         mat4 VP;
         vec3 light;
     };
