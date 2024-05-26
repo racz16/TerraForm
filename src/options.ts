@@ -1,5 +1,6 @@
 import { camera, cellsDebugUi, rendering, statisticsUi } from '.';
 import { Camera } from './camera';
+import { Cell } from './rendering/cell';
 
 export enum RenderingApiOption {
     AUTO,
@@ -112,7 +113,7 @@ export class Options {
     public setRenderingApi(renderingApi: RenderingApiOption): void {
         this.renderingApi = renderingApi;
         localStorage.setItem('renderingApi', this.renderingApi.toString());
-        rendering.restart();
+        rendering.recreate();
         camera.invalidate();
         if (DEVELOPMENT) {
             console.log('Rendering API changed');
@@ -203,6 +204,7 @@ export class Options {
         localStorage.setItem('cellSize', this.cellSize.toString());
         rendering.removeAllCells();
         cellsDebugUi.recreate();
+        Cell.updateMaxCellDistance();
         if (DEVELOPMENT) {
             console.log('Cell size changed');
         }

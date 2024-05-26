@@ -20,7 +20,6 @@ export class Cell {
     private z = 0;
     private entities: Entity[] = [];
     private drawConfigs: DrawConfig[] = [];
-    private entityCount = 0;
     private instanceBuffer!: Buffer;
     private valid = false;
     private instanceCount = 0;
@@ -30,7 +29,7 @@ export class Cell {
     private aabbMin = vec3.create();
     private aabbMax = vec3.create();
 
-    private static updateMaxCellDistance(): void {
+    public static updateMaxCellDistance(): void {
         const halfCellSize = options.getCellSize() / 2;
         const halfCellSizeSquared = halfCellSize * halfCellSize;
         Cell.maxCellDistance = Math.sqrt(halfCellSizeSquared + halfCellSizeSquared);
@@ -44,17 +43,27 @@ export class Cell {
         this.initialize(entities, meshes, x, z);
     }
 
+    public getX(): number {
+        return this.x;
+    }
+
+    public getZ(): number {
+        return this.z;
+    }
+
+    public isValid(): boolean {
+        return this.valid;
+    }
+
     public initialize(entities: Entity[], meshes: Mesh[], x: number, z: number): void {
         this.x = x;
         this.z = z;
-        this.entityCount = entities.length;
         this.entities = entities;
+        this.instanceCount = entities.length;
         this.instanceBuffer = this.createInstanceBuffer(meshes);
         this.createDrawConfigs(meshes);
         this.valid = true;
-        this.instanceCount = entities.length;
         statistics.increment('instances', entities.length);
-        Cell.updateMaxCellDistance();
         if (!this.cornerPoints.length) {
             for (let i = 0; i < 8; i++) {
                 this.cornerPoints.push(vec4.create());
@@ -66,10 +75,6 @@ export class Cell {
         this.vertexCount = 0;
         this.triangleCount = 0;
         let offset = 0;
-        for (const drawCOnfig of this.drawConfigs) {
-            drawCOnfig.release();
-        }
-        this.drawConfigs.length = 0;
         for (const mesh of meshes) {
             const entityCount = this.entities.filter((e) => e.mesh === mesh.name).length;
             if (entityCount) {
@@ -93,22 +98,10 @@ export class Cell {
         statistics.increment('triangles', this.triangleCount);
     }
 
-    public getX(): number {
-        return this.x;
-    }
-
-    public getZ(): number {
-        return this.z;
-    }
-
-    public isValid(): boolean {
-        return this.valid;
-    }
-
     private createInstanceBuffer(meshes: Mesh[]): Buffer {
         return createBuffer({
             type: 'data-callback',
-            size: this.entityCount * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
+            size: this.entities.length * (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT,
             callback: (data) => {
                 const instanceData = new Float32Array(data);
                 let offset = 0;
@@ -156,7 +149,7 @@ export class Cell {
         }
         for (const drawConfig of this.drawConfigs) {
             const instanceCount = drawConfig.getInstanceData()?.vertexCount ?? 1;
-            renderpass.setDrawConfigCommand({ drawConfig: drawConfig });
+            renderpass.setDrawConfigCommand({ drawConfig });
             const instanceOffset = instanceOffsetSupported ? offset : 0;
             renderpass.drawInstancedIndexedCommand({
                 indexCount: drawConfig.getMesh().indexBufferDescriptor.indexCount,
@@ -218,33 +211,38 @@ export class Cell {
         return vec4.scale(point, point, 1 / Math.abs(point[3]));
     }
 
-    public reset(meshes: Mesh[]): void {
-        this.instanceBuffer.release();
+    public recreate(meshes: Mesh[]): void {
+        this.releaseResources();
         this.instanceBuffer = this.createInstanceBuffer(meshes);
         this.createDrawConfigs(meshes);
-        Cell.updateMaxCellDistance();
     }
 
     public release(): void {
         if (this.valid) {
-            this.instanceBuffer.release();
-            statistics.increment('instances', -this.instanceCount);
-            statistics.increment('vertices', -this.vertexCount);
-            statistics.increment('triangles', -this.triangleCount);
-            for (const entity of this.entities) {
-                addToVec3Pool(entity.position);
-                addToVec3Pool(entity.rotation);
-                addToVec3Pool(entity.scale);
-            }
             for (const drawConfig of this.drawConfigs) {
                 const entity = this.entities.find((e) => e.mesh === drawConfig.getMesh().name);
                 if (entity) {
                     addToVec3Pool(entity.color);
                 }
-                drawConfig.release();
             }
-            this.drawConfigs.length = 0;
+            for (const entity of this.entities) {
+                addToVec3Pool(entity.position);
+                addToVec3Pool(entity.rotation);
+                addToVec3Pool(entity.scale);
+            }
+            this.releaseResources();
             this.valid = false;
         }
+    }
+
+    private releaseResources(): void {
+        this.instanceBuffer.release();
+        for (const drawConfig of this.drawConfigs) {
+            drawConfig.release();
+        }
+        this.drawConfigs.length = 0;
+        statistics.increment('instances', -this.instanceCount);
+        statistics.increment('vertices', -this.vertexCount);
+        statistics.increment('triangles', -this.triangleCount);
     }
 }

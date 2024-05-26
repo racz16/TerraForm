@@ -50,7 +50,7 @@ export function isWebGPU(): boolean {
 
 export class Rendering {
     private renderingApi!: RenderingApi;
-    private restarted = false;
+    private recreating = false;
     private canvas!: HTMLCanvasElement;
     private createCell!: (x: number, z: number) => Entity[];
     private lambertianPipeline!: Pipeline;
@@ -110,7 +110,7 @@ export class Rendering {
                 this.renderingApi = api;
                 await this.createResources();
                 for (const cell of this.cells) {
-                    cell.reset(this.meshes);
+                    cell.recreate(this.meshes);
                 }
                 if (DEVELOPMENT) {
                     console.log('Rendering initialized');
@@ -162,12 +162,15 @@ export class Rendering {
             console.groupCollapsed('Canvas');
         }
         const canvas = document.querySelector('canvas');
-        if (!canvas) {
-            throw new Error("Couldn't find the canvas element");
-        }
-        if (DEVELOPMENT) {
-            console.log('Canvas found');
-            console.groupEnd();
+        try {
+            if (!canvas) {
+                throw new Error("Couldn't find the canvas element");
+            }
+        } finally {
+            if (DEVELOPMENT) {
+                console.log('Canvas found');
+                console.groupEnd();
+            }
         }
         return canvas;
     }
@@ -241,25 +244,25 @@ export class Rendering {
 
     private createUniformBuffer(): void {
         if (getRenderingCapabilities().uniformBuffer) {
-            const padding = SIZEOF_FLOAT;
+            const bufferPadding = SIZEOF_FLOAT;
             this.uniformBuffer = createBuffer({
                 type: 'size',
-                size: MAT4_ITEM_COUNT * SIZEOF_FLOAT + VEC3_ITEM_COUNT * SIZEOF_FLOAT + padding,
+                size: (MAT4_ITEM_COUNT + VEC3_ITEM_COUNT) * SIZEOF_FLOAT + bufferPadding,
                 usage: BufferUsage.UNIFORM,
                 dynamic: true,
             });
-        }
-        const padding = 1;
-        this.uniformBufferData = new Float32Array(MAT4_ITEM_COUNT + VEC3_ITEM_COUNT + padding);
-        if (DEVELOPMENT) {
-            console.log('Uniform buffer created');
+            const dataPadding = 1;
+            this.uniformBufferData = new Float32Array(MAT4_ITEM_COUNT + VEC3_ITEM_COUNT + dataPadding);
+            if (DEVELOPMENT) {
+                console.log('Uniform buffer created');
+            }
         }
     }
 
     public async render(): Promise<void> {
         this.clearPerFrameStatistics();
-        if (this.restarted) {
-            await this.handleRestart();
+        if (this.recreating) {
+            await this.handleRecreation();
         }
         this.handleResize();
         this.renderScene();
@@ -272,9 +275,9 @@ export class Rendering {
             this.lambertianRenderpass.pushDebugGroupCommand('frame');
         }
         this.lambertianRenderpass.setPipelineCommand(this.lambertianPipeline);
-        this.updateCells(this.lambertianRenderpass);
-        this.updateUniforms(this.lambertianRenderpass);
-        this.renderCells(this.lambertianRenderpass);
+        this.updateCells();
+        this.updateUniforms();
+        this.renderCells();
         if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
             this.lambertianRenderpass.popDebugGroupCommand();
         }
@@ -291,13 +294,13 @@ export class Rendering {
         this.quadRenderpass.drawIndexedCommand(quadMesh.indexBufferDescriptor.indexCount);
     }
 
-    private async handleRestart(): Promise<void> {
+    private async handleRecreation(): Promise<void> {
         await this.release();
         const newCanvas = document.createElement('canvas');
         this.canvas.replaceWith(newCanvas);
         this.canvas = newCanvas;
         await this.initializeWithApi();
-        this.restarted = false;
+        this.recreating = false;
     }
 
     private handleResize(): void {
@@ -311,12 +314,8 @@ export class Rendering {
     }
 
     private recreateRenderpassAttachments(): void {
-        if (this.color) {
-            this.color.release();
-        }
-        if (this.depth) {
-            this.depth.release();
-        }
+        this.color?.release();
+        this.depth?.release();
         this.color = createTexture({
             type: '2d',
             format: 'rgba8',
@@ -334,12 +333,8 @@ export class Rendering {
             rendered: true,
             label: 'depth buffer',
         });
-        if (this.lambertianRenderpass) {
-            this.lambertianRenderpass.release();
-        }
-        if (this.quadRenderpass) {
-            this.quadRenderpass.release();
-        }
+        this.lambertianRenderpass?.release();
+        this.quadRenderpass?.release();
         this.commandBuffer = createCommandBuffer('default command buffer');
         this.lambertianRenderpass = this.commandBuffer.createRenderpass({
             type: 'offscreen',
@@ -362,14 +357,14 @@ export class Rendering {
         });
     }
 
-    private updateCells(renderpass: Renderpass): void {
+    private updateCells(): void {
         if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
-            renderpass.pushDebugGroupCommand('update cells');
+            this.lambertianRenderpass.pushDebugGroupCommand('update cells');
         }
         this.removeCells();
         this.addCells();
         if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
-            renderpass.popDebugGroupCommand();
+            this.lambertianRenderpass.popDebugGroupCommand();
         }
     }
 
@@ -407,8 +402,8 @@ export class Rendering {
     }
 
     private getCell(cellCenterX: number, cellCenterZ: number): Cell {
-        if (this.cellsPool.length) {
-            const cell = this.cellsPool.pop()!;
+        const cell = this.cellsPool.pop();
+        if (cell) {
             cell.initialize(this.createCell(cellCenterX, cellCenterZ), this.meshes, cellCenterX, cellCenterZ);
             return cell;
         } else {
@@ -436,16 +431,16 @@ export class Rendering {
         }
     }
 
-    private renderCells(renderpass: Renderpass): void {
+    private renderCells(): void {
         if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
-            renderpass.pushDebugGroupCommand('render cells');
+            this.lambertianRenderpass.pushDebugGroupCommand('render cells');
         }
         statistics.set('cells', this.cells.length);
         for (const cell of this.cells) {
-            cell.render(renderpass);
+            cell.render(this.lambertianRenderpass);
         }
         if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
-            renderpass.popDebugGroupCommand();
+            this.lambertianRenderpass.popDebugGroupCommand();
         }
     }
 
@@ -458,26 +453,26 @@ export class Rendering {
         statistics.set('rendered-triangles', 0);
     }
 
-    private updateUniforms(renderpass: Renderpass): void {
+    private updateUniforms(): void {
         if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
-            renderpass.pushDebugGroupCommand('update uniforms');
+            this.lambertianRenderpass.pushDebugGroupCommand('update uniforms');
         }
         vec3.normalize(this.lightDirection, vec3.set(this.lightDirection, -1, -2, -3));
         if (getRenderingCapabilities().uniformBuffer) {
             this.uniformBufferData.set(camera.getVP(), 0);
             this.uniformBufferData.set(this.lightDirection, MAT4_ITEM_COUNT);
             this.uniformBuffer.setData({ type: 'buffer', data: this.uniformBufferData });
-            renderpass.setUniformBufferCommand({
+            this.lambertianRenderpass.setUniformBufferCommand({
                 index: 0,
                 name: 'FrameData',
                 value: this.uniformBuffer,
             });
         } else {
-            renderpass.setUniformMat4Command({ name: 'VP', value: camera.getVP() });
-            renderpass.setUniformVec3Command({ name: 'light', value: this.lightDirection });
+            this.lambertianRenderpass.setUniformMat4Command({ name: 'VP', value: camera.getVP() });
+            this.lambertianRenderpass.setUniformVec3Command({ name: 'light', value: this.lightDirection });
         }
         if (DEVELOPMENT && getRenderingCapabilities().debugGroups) {
-            renderpass.popDebugGroupCommand();
+            this.lambertianRenderpass.popDebugGroupCommand();
         }
     }
 
@@ -490,8 +485,8 @@ export class Rendering {
         return Math.sqrt(distanceX * distanceX + distanceZ * distanceZ) <= maxFrustumDistance + maxCellDistance;
     }
 
-    public restart(): void {
-        this.restarted = true;
+    public recreate(): void {
+        this.recreating = true;
     }
 
     public removeAllCells(): void {

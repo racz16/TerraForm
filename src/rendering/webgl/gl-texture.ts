@@ -4,12 +4,12 @@ import { getGlContext } from './gl-rendering-context';
 
 export abstract class GlTexture implements Texture {
     protected context = getGlContext();
-    protected id: WebGLTexture;
+    protected id: WebGLTexture | null;
     protected size = 0;
     protected valid = true;
 
     public constructor(descriptor: Texture2dDescriptor) {
-        this.id = this.context.createTexture()!;
+        this.id = this.context.createTexture();
         this.context.bindTexture(this.context.TEXTURE_2D, this.id);
         this.context.texImage2D(
             this.context.TEXTURE_2D,
@@ -31,7 +31,7 @@ export abstract class GlTexture implements Texture {
         statistics.increment('api-calls', 7);
     }
 
-    public getId(): WebGLTexture {
+    public getId(): WebGLTexture | null {
         return this.id;
     }
 
