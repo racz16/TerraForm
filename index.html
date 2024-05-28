@@ -9,6 +9,7 @@
             body {
                 margin: 0;
                 height: 100%;
+                overflow: hidden;
             }
 
             canvas {
@@ -17,16 +18,22 @@
                 height: 100%;
             }
 
-            /* options dialog */
-            #open-options-button {
+            /* options panel */
+            #toggle-options-button {
                 position: absolute;
                 bottom: 0;
-                right: 0;
+                left: 0;
                 width: 32px;
                 height: 32px;
             }
 
-            dialog {
+            #options {
+                position: absolute;
+                display: none;
+                top: 0;
+                bottom: 0;
+                right: 0;
+                z-index: 1;
                 width: 400px;
                 background-color: rgba(255, 255, 255, 0.5);
                 backdrop-filter: blur(10px);
@@ -34,7 +41,7 @@
                 padding: 32px 48px;
             }
 
-            .dialog-header {
+            .options-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -61,10 +68,6 @@
 
             .title {
                 font-size: 32px;
-            }
-
-            ::backdrop {
-                backdrop-filter: blur(5px);
             }
 
             .form-field {
@@ -178,7 +181,7 @@
                 <div id="rendered-triangles"></div>
             </div>
         </div>
-        <button id="open-options-button">
+        <button id="toggle-options-button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
                 <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
                 <path
@@ -186,8 +189,8 @@
                 />
             </svg>
         </button>
-        <dialog>
-            <div class="dialog-header">
+        <div id="options">
+            <div class="options-header">
                 <div class="title">Options</div>
                 <button id="close-options-button">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
@@ -225,6 +228,10 @@
                 <input id="instance-count-input" type="number" min="0" value="100" />
             </div>
             <div class="form-field one-line-form-field">
+                <label for="fullscreen-input">Fullscreen</label>
+                <input id="fullscreen-input" type="checkbox" />
+            </div>
+            <div class="form-field one-line-form-field">
                 <label for="statistics-input">Show statistics</label>
                 <input id="statistics-input" type="checkbox" />
             </div>
@@ -236,7 +243,7 @@
                 <label for="cells-debugger-input">Cells debugger</label>
                 <input id="cells-debugger-input" type="checkbox" />
             </div>
-        </dialog>
+        </div>
         <div id="cells-debugger"></div>
         <canvas></canvas>
         <script src="index.js"></script>
